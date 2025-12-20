@@ -1,0 +1,568 @@
+#include "kafka_client.h"
+
+// 错误码定义
+enum {
+    KAFKA_OK = 0,
+    KAFKA_ERROR = 1,
+    KAFKA_ERROR_CREATE_CLIENT = 2,
+    KAFKA_ERROR_CONFIG = 3,
+    KAFKA_ERROR_CONNECT = 4,
+    KAFKA_ERROR_TOPICS = 5,
+    KAFKA_ERROR_SEND = 6,
+    KAFKA_ERROR_SUBSCRIBE = 7,
+    KAFKA_ERROR_CONSUME = 8,
+};
+
+// 错误信息
+static const char* error_messages[] = {
+    "Success",
+    "General error",
+    "Failed to create client",
+    "Configuration error",
+    "Connection error",
+    "Failed to get topics",
+    "Failed to send message",
+    "Failed to subscribe to topic",
+    "Failed to consume message",
+};
+
+// Kafka生产者上下文
+typedef struct {
+    rd_kafka_t* rk;
+} KafkaProducer;
+
+// Kafka消费者上下文
+typedef struct {
+    rd_kafka_t* rk;
+    rd_kafka_topic_partition_list_t* topic_list;
+} KafkaConsumer;
+
+// Kafka消息上下文
+typedef struct {
+    char* content;
+    char* key;
+    char* topic;
+    int64_t offset;
+    int32_t partition;
+    int64_t timestamp;
+} KafkaMessage;
+
+// 创建Kafka生产者
+KafkaClientHandle create_kafka_producer(const char* bootstrap_servers) {
+    rd_kafka_t* rk;
+    rd_kafka_conf_t* conf;
+    char errstr[512];
+    
+    printf("🔧 C: create_kafka_producer called with bootstrap_servers: %s\n", bootstrap_servers);
+    
+    // 创建配置
+    conf = rd_kafka_conf_new();
+    if (!conf) {
+        printf("❌ C: Failed to create Kafka configuration\n");
+        return NULL;
+    }
+    
+    // 设置bootstrap servers
+    if (rd_kafka_conf_set(conf, "bootstrap.servers", bootstrap_servers, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+        printf("❌ C: Failed to set bootstrap.servers: %s\n", errstr);
+        rd_kafka_conf_destroy(conf);
+        return NULL;
+    }
+    
+    // 设置客户端ID
+    if (rd_kafka_conf_set(conf, "client.id", "flutter-kafka-producer", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+        printf("❌ C: Failed to set client.id: %s\n", errstr);
+        rd_kafka_conf_destroy(conf);
+        return NULL;
+    }
+    
+    // 创建生产者实例
+    rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
+    if (!rk) {
+        printf("❌ C: Failed to create Kafka producer: %s\n", errstr);
+        rd_kafka_conf_destroy(conf);
+        return NULL;
+    }
+    
+    // 分配生产者上下文
+    KafkaProducer* producer = malloc(sizeof(KafkaProducer));
+    if (!producer) {
+        printf("❌ C: Failed to allocate memory for producer\n");
+        rd_kafka_destroy(rk);
+        return NULL;
+    }
+    
+    producer->rk = rk;
+    printf("✅ C: Successfully created Kafka producer\n");
+    return producer;
+}
+
+// 创建Kafka消费者
+KafkaClientHandle create_kafka_consumer(const char* bootstrap_servers, const char* group_id) {
+    // 默认使用earliest偏移量重置策略
+    return create_kafka_consumer_with_config(bootstrap_servers, group_id, "earliest");
+}
+
+// 创建带消费位置配置的Kafka消费者
+KafkaClientHandle create_kafka_consumer_with_config(const char* bootstrap_servers, const char* group_id, const char* auto_offset_reset) {
+    rd_kafka_t* rk;
+    rd_kafka_conf_t* conf;
+    char errstr[512];
+    
+    // 创建配置
+    conf = rd_kafka_conf_new();
+    if (!conf) {
+        return NULL;
+    }
+    
+    // 设置bootstrap servers
+    if (rd_kafka_conf_set(conf, "bootstrap.servers", bootstrap_servers, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+        rd_kafka_conf_destroy(conf);
+        return NULL;
+    }
+    
+    // 设置消费者组ID
+    if (rd_kafka_conf_set(conf, "group.id", group_id, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+        rd_kafka_conf_destroy(conf);
+        return NULL;
+    }
+    
+    // 设置客户端ID
+    if (rd_kafka_conf_set(conf, "client.id", "flutter-kafka-consumer", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+        rd_kafka_conf_destroy(conf);
+        return NULL;
+    }
+    
+    // 设置自动偏移重置策略
+    if (rd_kafka_conf_set(conf, "auto.offset.reset", auto_offset_reset, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+        rd_kafka_conf_destroy(conf);
+        return NULL;
+    }
+    
+    // 设置启用自动提交
+    if (rd_kafka_conf_set(conf, "enable.auto.commit", "true", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+        rd_kafka_conf_destroy(conf);
+        return NULL;
+    }
+    
+    // 创建消费者实例
+    rk = rd_kafka_new(RD_KAFKA_CONSUMER, conf, errstr, sizeof(errstr));
+    if (!rk) {
+        rd_kafka_conf_destroy(conf);
+        return NULL;
+    }
+    
+    // 分配消费者上下文
+    KafkaConsumer* consumer = malloc(sizeof(KafkaConsumer));
+    if (!consumer) {
+        rd_kafka_destroy(rk);
+        return NULL;
+    }
+    
+    consumer->rk = rk;
+    consumer->topic_list = NULL;
+    return consumer;
+}
+
+// 关闭Kafka客户端
+void close_kafka_client(KafkaClientHandle client) {
+    if (!client) {
+        return;
+    }
+    
+    // 先尝试作为生产者处理
+    KafkaProducer* producer = (KafkaProducer*)client;
+    rd_kafka_t* rk = producer->rk;
+    
+    if (rd_kafka_type(rk) == RD_KAFKA_PRODUCER) {
+        // 销毁生产者
+        rd_kafka_flush(producer->rk, 5000);
+        rd_kafka_destroy(producer->rk);
+        free(producer);
+    } else {
+        // 作为消费者处理
+        KafkaConsumer* consumer = (KafkaConsumer*)client;
+        // 取消订阅
+        if (consumer->topic_list) {
+            rd_kafka_topic_partition_list_destroy(consumer->topic_list);
+        }
+        // 关闭消费者
+        rd_kafka_consumer_close(consumer->rk);
+        rd_kafka_destroy(consumer->rk);
+        free(consumer);
+    }
+}
+
+// 获取主题列表
+char** get_kafka_topics(KafkaClientHandle client, int32_t* topic_count) {
+    if (!client || !topic_count) {
+        return NULL;
+    }
+    
+    rd_kafka_t* rk = ((KafkaProducer*)client)->rk;
+    const struct rd_kafka_metadata* metadata;
+    
+    // 向broker请求元数据
+    rd_kafka_resp_err_t err = rd_kafka_metadata(
+        rk,                 // 客户端
+        1,                  // 包括主题元数据
+        NULL,               // 特定主题（NULL表示所有主题）
+        &metadata,          // 输出元数据
+        5000);              // 超时时间（毫秒）
+    
+    if (err != RD_KAFKA_RESP_ERR_NO_ERROR) {
+        return NULL;
+    }
+    
+    // 分配主题名称数组
+    char** topic_names = malloc(metadata->topic_cnt * sizeof(char*));
+    if (!topic_names) {
+        rd_kafka_metadata_destroy(metadata);
+        return NULL;
+    }
+    
+    // 复制主题名称
+    for (int i = 0; i < metadata->topic_cnt; i++) {
+        const struct rd_kafka_metadata_topic* topic = &metadata->topics[i];
+        topic_names[i] = strdup(topic->topic);
+        if (!topic_names[i]) {
+            // 清理已分配的内存
+            for (int j = 0; j < i; j++) {
+                free(topic_names[j]);
+            }
+            free(topic_names);
+            rd_kafka_metadata_destroy(metadata);
+            return NULL;
+        }
+    }
+    
+    *topic_count = metadata->topic_cnt;
+    rd_kafka_metadata_destroy(metadata);
+    return topic_names;
+}
+
+// 释放主题列表
+void free_kafka_topics(char** topics, int32_t topic_count) {
+    if (!topics || topic_count <= 0) {
+        return;
+    }
+    
+    for (int i = 0; i < topic_count; i++) {
+        free(topics[i]);
+    }
+    free(topics);
+}
+
+// 发送消息
+KafkaErrorCode send_kafka_message(KafkaClientHandle producer, const char* topic, const char* message) {
+    if (!producer || !topic || !message) {
+        return KAFKA_ERROR;
+    }
+    
+    KafkaProducer* p = (KafkaProducer*)producer;
+    rd_kafka_t* rk = p->rk;
+    
+    // 创建主题
+    rd_kafka_topic_t* rkt = rd_kafka_topic_new(rk, topic, NULL);
+    if (!rkt) {
+        return KAFKA_ERROR_SEND;
+    }
+    
+    // 发送消息
+    rd_kafka_resp_err_t err = rd_kafka_produce(
+        rkt,                                   // 主题
+        RD_KAFKA_PARTITION_UA,                 // 自动分区
+        RD_KAFKA_MSG_F_COPY,                   // 复制消息内容
+        (void*)message,                        // 消息内容
+        strlen(message),                       // 消息长度
+        NULL,                                  // 键
+        0,                                     // 键长度
+        NULL);                                 // 私有数据
+    
+    // 销毁主题
+    rd_kafka_topic_destroy(rkt);
+    
+    if (err != RD_KAFKA_RESP_ERR_NO_ERROR) {
+        return KAFKA_ERROR_SEND;
+    }
+    
+    // 刷新生产者以确保消息发送
+    rd_kafka_flush(rk, 5000);
+    return KAFKA_OK;
+}
+
+// 订阅主题
+KafkaErrorCode subscribe_kafka_topic(KafkaClientHandle consumer, const char* topic) {
+    if (!consumer || !topic) {
+        return KAFKA_ERROR;
+    }
+    
+    KafkaConsumer* c = (KafkaConsumer*)consumer;
+    rd_kafka_t* rk = c->rk;
+    
+    // 创建或更新主题列表
+    if (c->topic_list) {
+        rd_kafka_topic_partition_list_destroy(c->topic_list);
+    }
+    
+    c->topic_list = rd_kafka_topic_partition_list_new(1);
+    if (!c->topic_list) {
+        return KAFKA_ERROR_SUBSCRIBE;
+    }
+    
+    // 添加主题到列表
+    rd_kafka_topic_partition_list_add(c->topic_list, topic, RD_KAFKA_PARTITION_UA);
+    
+    // 订阅主题
+    rd_kafka_resp_err_t err = rd_kafka_subscribe(rk, c->topic_list);
+    if (err != RD_KAFKA_RESP_ERR_NO_ERROR) {
+        return KAFKA_ERROR_SUBSCRIBE;
+    }
+    
+    return KAFKA_OK;
+}
+
+// 消费消息
+KafkaMessageHandle consume_kafka_message(KafkaClientHandle consumer, int32_t timeout_ms) {
+    if (!consumer) {
+        return NULL;
+    }
+    
+    KafkaConsumer* c = (KafkaConsumer*)consumer;
+    rd_kafka_t* rk = c->rk;
+    
+    // 消费消息
+    rd_kafka_message_t* rkmessage = rd_kafka_consumer_poll(rk, timeout_ms);
+    if (!rkmessage) {
+        return NULL;  // 超时
+    }
+    
+    // 检查错误
+    if (rkmessage->err) {
+        rd_kafka_message_destroy(rkmessage);
+        return NULL;
+    }
+    
+    // 创建消息上下文
+    KafkaMessage* message = malloc(sizeof(KafkaMessage));
+    if (!message) {
+        rd_kafka_message_destroy(rkmessage);
+        return NULL;
+    }
+    
+    // 复制消息内容
+    if (rkmessage->payload && rkmessage->len > 0) {
+        message->content = malloc(rkmessage->len + 1);
+        if (!message->content) {
+            free(message);
+            rd_kafka_message_destroy(rkmessage);
+            return NULL;
+        }
+        memcpy(message->content, rkmessage->payload, rkmessage->len);
+        message->content[rkmessage->len] = '\0';
+    } else {
+        message->content = strdup("");
+    }
+    
+    // 复制消息key
+    if (rkmessage->key && rkmessage->key_len > 0) {
+        message->key = malloc(rkmessage->key_len + 1);
+        if (!message->key) {
+            free(message->content);
+            free(message);
+            rd_kafka_message_destroy(rkmessage);
+            return NULL;
+        }
+        memcpy(message->key, rkmessage->key, rkmessage->key_len);
+        message->key[rkmessage->key_len] = '\0';
+    } else {
+        message->key = strdup("");
+    }
+    
+    // 复制主题名称
+    if (rkmessage->rkt) {
+        message->topic = strdup(rd_kafka_topic_name(rkmessage->rkt));
+    } else {
+        message->topic = strdup("");
+    }
+    
+    message->offset = rkmessage->offset;
+    message->partition = rkmessage->partition;
+    
+    // 获取消息时间戳
+    rd_kafka_timestamp_type_t ts_type;
+    message->timestamp = rd_kafka_message_timestamp(rkmessage, &ts_type);
+    
+    rd_kafka_message_destroy(rkmessage);
+    return message;
+}
+
+// 获取消息内容
+const char* get_kafka_message_content(KafkaMessageHandle message) {
+    if (!message) {
+        return NULL;
+    }
+    
+    KafkaMessage* msg = (KafkaMessage*)message;
+    return msg->content;
+}
+
+// 获取消息主题
+const char* get_kafka_message_topic(KafkaMessageHandle message) {
+    if (!message) {
+        return NULL;
+    }
+    
+    KafkaMessage* msg = (KafkaMessage*)message;
+    return msg->topic;
+}
+
+// 获取消息偏移量
+int64_t get_kafka_message_offset(KafkaMessageHandle message) {
+    if (!message) {
+        return -1;
+    }
+    
+    KafkaMessage* msg = (KafkaMessage*)message;
+    return msg->offset;
+}
+
+// 获取消息分区
+int32_t get_kafka_message_partition(KafkaMessageHandle message) {
+    if (!message) {
+        return -1;
+    }
+    
+    KafkaMessage* msg = (KafkaMessage*)message;
+    return msg->partition;
+}
+
+// 获取消息key
+const char* get_kafka_message_key(KafkaMessageHandle message) {
+    if (!message) {
+        return NULL;
+    }
+    
+    KafkaMessage* msg = (KafkaMessage*)message;
+    return msg->key;
+}
+
+// 获取消息时间戳
+int64_t get_kafka_message_timestamp(KafkaMessageHandle message) {
+    if (!message) {
+        return -1;
+    }
+    
+    KafkaMessage* msg = (KafkaMessage*)message;
+    return msg->timestamp;
+}
+
+// 重置消费者偏移量到特定时间戳
+KafkaErrorCode seek_to_timestamp(KafkaClientHandle consumer, const char* topic, int64_t timestamp_ms) {
+    if (!consumer || !topic) {
+        return KAFKA_ERROR;
+    }
+    
+    KafkaConsumer* c = (KafkaConsumer*)consumer;
+    rd_kafka_t* rk = c->rk;
+    rd_kafka_topic_partition_list_t* partitions;
+    int i;
+    
+    // 获取主题的所有分区
+    partitions = rd_kafka_topic_partition_list_new(0);
+    if (!partitions) {
+        return KAFKA_ERROR;
+    }
+    
+    // 获取分区列表
+    const struct rd_kafka_metadata* metadata;
+    rd_kafka_resp_err_t err = rd_kafka_metadata(rk, 1, rd_kafka_topic_new(rk, topic, NULL), &metadata, 5000);
+    rd_kafka_topic_destroy(rd_kafka_topic_new(rk, topic, NULL));
+    
+    if (err != RD_KAFKA_RESP_ERR_NO_ERROR) {
+        rd_kafka_topic_partition_list_destroy(partitions);
+        return KAFKA_ERROR;
+    }
+    
+    // 遍历所有分区
+    for (i = 0; i < metadata->topic_cnt; i++) {
+        const struct rd_kafka_metadata_topic* meta_topic = &metadata->topics[i];
+        if (strcmp(meta_topic->topic, topic) == 0) {
+            // 为每个分区设置要查找的时间戳
+            for (int j = 0; j < meta_topic->partition_cnt; j++) {
+                const struct rd_kafka_metadata_partition* meta_partition = &meta_topic->partitions[j];
+                rd_kafka_topic_partition_t* rktpar = rd_kafka_topic_partition_list_add(partitions, topic, meta_partition->id);
+                rktpar->offset = timestamp_ms;
+            }
+            break;
+        }
+    }
+    
+    rd_kafka_metadata_destroy(metadata);
+    
+    if (partitions->cnt == 0) {
+        rd_kafka_topic_partition_list_destroy(partitions);
+        return KAFKA_ERROR;
+    }
+    
+    // 使用时间戳查找偏移量
+    err = rd_kafka_offsets_for_times(rk, partitions, 5000);
+    if (err != RD_KAFKA_RESP_ERR_NO_ERROR) {
+        rd_kafka_topic_partition_list_destroy(partitions);
+        return KAFKA_ERROR;
+    }
+    
+    // 为每个分区设置偏移量
+    for (i = 0; i < partitions->cnt; i++) {
+        rd_kafka_topic_partition_t* rktpar = &partitions->elems[i];
+        if (rktpar->err != RD_KAFKA_RESP_ERR_NO_ERROR) {
+            continue;
+        }
+        
+        // 使用seek设置偏移量
+        rd_kafka_topic_t* rkt = rd_kafka_topic_new(rk, rktpar->topic, NULL);
+        if (!rkt) {
+            rd_kafka_topic_partition_list_destroy(partitions);
+            return KAFKA_ERROR;
+        }
+        
+        err = rd_kafka_seek(rkt, rktpar->partition, rktpar->offset, 5000);
+        rd_kafka_topic_destroy(rkt);
+        
+        if (err != RD_KAFKA_RESP_ERR_NO_ERROR) {
+            rd_kafka_topic_partition_list_destroy(partitions);
+            return KAFKA_ERROR;
+        }
+    }
+    
+    rd_kafka_topic_partition_list_destroy(partitions);
+    return KAFKA_OK;
+}
+
+// 释放消息
+void free_kafka_message(KafkaMessageHandle message) {
+    if (!message) {
+        return;
+    }
+    
+    KafkaMessage* msg = (KafkaMessage*)message;
+    if (msg->content) {
+        free(msg->content);
+    }
+    if (msg->key) {
+        free(msg->key);
+    }
+    if (msg->topic) {
+        free(msg->topic);
+    }
+    free(msg);
+}
+
+// 获取错误信息
+const char* get_kafka_error_msg(KafkaErrorCode error_code) {
+    if (error_code < 0 || error_code >= sizeof(error_messages) / sizeof(error_messages[0])) {
+        return "Unknown error";
+    }
+    
+    return error_messages[error_code];
+}
