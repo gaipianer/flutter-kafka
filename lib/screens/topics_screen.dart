@@ -14,7 +14,6 @@ class _TopicsScreenState extends State<TopicsScreen> {
   String? _selectedTopic;
   final _messageController = TextEditingController();
   bool _isSending = false;
-  bool _isConsuming = false;
   String _autoOffsetReset = 'latest'; // earliest, latest
   final _timestampController = TextEditingController();
   bool _useCustomTimestamp = false;
@@ -224,8 +223,10 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                         style: TextStyle(
                                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                           color: isSelected ? const Color(0xFF1E3A8A) : const Color(0xFF334155),
-                                          fontSize: 16,
+                                          fontSize: 14, // 减小字体大小
                                         ),
+                                        overflow: TextOverflow.ellipsis, // 添加文本截断
+                                        maxLines: 1, // 限制为一行
                                       ),
                                     ),
                                     Container(
@@ -369,13 +370,13 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                       ),
                                     ),
                                     Text(
-                                      '${kafkaProvider.messages.length} messages',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Color(0xFF065F46),
-                                        fontWeight: FontWeight.bold,
+                                        '${kafkaProvider.consumerProvider.messages.length} messages',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF065F46),
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -384,7 +385,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                         ),
 
                         // 消息发送区域 - 消费时隐藏
-                        if (_selectedTopic != null && !_isConsuming)
+                        if (_selectedTopic != null && !kafkaProvider.consumerProvider.isConsuming)
                           Column(
                             children: [
                               const SizedBox(height: 24),
@@ -550,14 +551,14 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                             ElevatedButton.icon(
                                               onPressed: _toggleConsuming,
                                               icon: Icon(
-                                                _isConsuming
+                                                kafkaProvider.consumerProvider.isConsuming
                                                     ? Icons.stop
                                                     : Icons.play_arrow,
                                                 color: Colors.white,
                                                 size: 20,
                                               ),
                                               label: Text(
-                                                _isConsuming ? 'Stop' : 'Start',
+                                                kafkaProvider.consumerProvider.isConsuming ? 'Stop' : 'Start',
                                                 style: const TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 16,
@@ -565,7 +566,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                 ),
                                               ),
                                               style: ElevatedButton.styleFrom(
-                                                backgroundColor: _isConsuming
+                                                backgroundColor: kafkaProvider.consumerProvider.isConsuming
                                                     ? const Color(0xFFDC2626)
                                                     : const Color(0xFF10B981),
                                                 padding: const EdgeInsets.symmetric(
@@ -574,7 +575,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                   borderRadius: BorderRadius.circular(10),
                                                 ),
                                                 elevation: 3,
-                                                shadowColor: _isConsuming
+                                                shadowColor: kafkaProvider.consumerProvider.isConsuming
                                                     ? const Color(0xFFDC2626).withOpacity(0.3)
                                                     : const Color(0xFF10B981).withOpacity(0.3),
                                               ),
@@ -621,7 +622,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                     child: Text('Latest'),
                                                   ),
                                                 ],
-                                                onChanged: _isConsuming ? null : (value) {
+                                                onChanged: kafkaProvider.consumerProvider.isConsuming ? null : (value) {
                                                   if (value != null) {
                                                     setState(() {
                                                       _autoOffsetReset = value;
@@ -636,7 +637,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                 children: [
                                                   Checkbox(
                                                     value: _useCustomTimestamp,
-                                                    onChanged: _isConsuming ? null : (value) {
+                                                    onChanged: kafkaProvider.consumerProvider.isConsuming ? null : (value) {
                                                       setState(() {
                                                         _useCustomTimestamp = value ?? false;
                                                       });
@@ -653,7 +654,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                         ),
                                                       ),
                                                       keyboardType: TextInputType.number,
-                                                      enabled: !_isConsuming && _useCustomTimestamp,
+                                                      enabled: !kafkaProvider.consumerProvider.isConsuming && _useCustomTimestamp,
                                                     ),
                                                   ),
                                                 ],
@@ -716,7 +717,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                               ),
                                               const SizedBox(height: 8),
                                               Text(
-                                                '${kafkaProvider.messages.length} messages',
+                                                '${kafkaProvider.consumerProvider.messages.length} messages',
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   color: Color(0xFF64748B),
@@ -727,7 +728,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                         ),
                                         const Divider(height: 1, color: Color(0xFFE2E8F0)),
                                         Expanded(
-                                          child: kafkaProvider.messages.isEmpty
+                                          child: kafkaProvider.consumerProvider.messages.isEmpty
                                               ? Center(
                                                   child: Padding(
                                                     padding: const EdgeInsets.all(40),
@@ -749,7 +750,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                         ),
                                                         const SizedBox(height: 20),
                                                         Text(
-                                                          _isConsuming
+                                                          kafkaProvider.consumerProvider.isConsuming
                                                               ? 'Listening for messages...'
                                                               : 'No messages received yet',
                                                           textAlign: TextAlign.center,
@@ -760,7 +761,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                           ),
                                                         ),
                                                         const SizedBox(height: 10),
-                                                        if (!_isConsuming)
+                                                        if (!kafkaProvider.consumerProvider.isConsuming)
                                                           const Text(
                                                             'Click "Start" to begin consuming messages',
                                                             textAlign: TextAlign.center,
@@ -775,10 +776,10 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                 )
                                               : ListView.builder(
                                                   padding: const EdgeInsets.all(0),
-                                                  itemCount: kafkaProvider.messages.length,
+                                                  itemCount: kafkaProvider.consumerProvider.messages.length,
                                                   itemBuilder: (context, index) {
-                                                    final message = kafkaProvider.messages[index];
-                                                    final isLast = index == kafkaProvider.messages.length - 1;
+                                                    final message = kafkaProvider.consumerProvider.messages[index];
+                                                    final isLast = index == kafkaProvider.consumerProvider.messages.length - 1;
                                                     
                                                     // Extract metadata
                                                     final key = message['key'];
@@ -803,89 +804,95 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                         child: Column(
                                                           crossAxisAlignment: CrossAxisAlignment.start,
                                                           children: [
-                                                            Row(
-                                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                              children: [
-                                                                // Key
-                                                                Expanded(
-                                                                  child: Column(
-                                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                                    children: [
-                                                                      const Text(
-                                                                        'Key',
-                                                                        style: TextStyle(
-                                                                          fontSize: 12,
-                                                                          color: Color(0xFF64748B),
-                                                                          fontWeight: FontWeight.w500,
-                                                                        ),
+                                                            SingleChildScrollView(
+                                                              scrollDirection: Axis.horizontal,
+                                                              child: Container(
+                                                                width: 450, // 固定宽度，确保内容能完整显示
+                                                                child: Row(
+                                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                                  children: [
+                                                                    // Key
+                                                                    SizedBox(width: 150, // 固定宽度
+                                                                      child: Column(
+                                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                                        children: [
+                                                                          const Text(
+                                                                            'Key',
+                                                                            style: TextStyle(
+                                                                              fontSize: 12,
+                                                                              color: Color(0xFF64748B),
+                                                                              fontWeight: FontWeight.w500,
+                                                                            ),
+                                                                          ),
+                                                                          const SizedBox(height: 4),
+                                                                          Text(
+                                                                            key != null ? key.toString() : 'null',
+                                                                            style: const TextStyle(
+                                                                              fontSize: 13,
+                                                                              color: Color(0xFF1E293B),
+                                                                              fontFamily: 'Monaco',
+                                                                            ),
+                                                                            overflow: TextOverflow.ellipsis,
+                                                                          ),
+                                                                        ],
                                                                       ),
-                                                                      const SizedBox(height: 4),
-                                                                      Text(
-                                                                        key != null ? key.toString() : 'null',
-                                                                        style: const TextStyle(
-                                                                          fontSize: 13,
-                                                                          color: Color(0xFF1E293B),
-                                                                          fontFamily: 'Monaco',
-                                                                        ),
-                                                                        overflow: TextOverflow.ellipsis,
+                                                                    ),
+                                                                     
+                                                                    // Partition
+                                                                    SizedBox(width: 100, // 固定宽度
+                                                                      child: Column(
+                                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                                        children: [
+                                                                          const Text(
+                                                                            'Partition',
+                                                                            style: TextStyle(
+                                                                              fontSize: 12,
+                                                                              color: Color(0xFF64748B),
+                                                                              fontWeight: FontWeight.w500,
+                                                                            ),
+                                                                          ),
+                                                                          const SizedBox(height: 4),
+                                                                          Text(
+                                                                            partition != null ? partition.toString() : 'N/A',
+                                                                            style: const TextStyle(
+                                                                              fontSize: 13,
+                                                                              color: Color(0xFF1E293B),
+                                                                            ),
+                                                                          ),
+                                                                        ],
                                                                       ),
-                                                                    ],
-                                                                  ),
+                                                                    ),
+                                                                     
+                                                                    // Timestamp
+                                                                    SizedBox(width: 200, // 固定宽度
+                                                                      child: Column(
+                                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                                        children: [
+                                                                          const Text(
+                                                                            'Timestamp',
+                                                                            style: TextStyle(
+                                                                              fontSize: 12,
+                                                                              color: Color(0xFF64748B),
+                                                                              fontWeight: FontWeight.w500,
+                                                                            ),
+                                                                          ),
+                                                                          const SizedBox(height: 4),
+                                                                          Text(
+                                                                            timestamp != null
+                                                                                ? DateTime.fromMillisecondsSinceEpoch(timestamp).toString().substring(0, 19)
+                                                                                : 'N/A',
+                                                                            style: const TextStyle(
+                                                                              fontSize: 13,
+                                                                              color: Color(0xFF1E293B),
+                                                                            ),
+                                                                            overflow: TextOverflow.ellipsis,
+                                                                          ),
+                                                                        ],
+                                                                      ),
+                                                                    ),
+                                                                  ],
                                                                 ),
-                                                                 
-                                                                // Partition
-                                                                Expanded(
-                                                                  child: Column(
-                                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                                    children: [
-                                                                      const Text(
-                                                                        'Partition',
-                                                                        style: TextStyle(
-                                                                          fontSize: 12,
-                                                                          color: Color(0xFF64748B),
-                                                                          fontWeight: FontWeight.w500,
-                                                                        ),
-                                                                      ),
-                                                                      const SizedBox(height: 4),
-                                                                      Text(
-                                                                        partition != null ? partition.toString() : 'N/A',
-                                                                        style: const TextStyle(
-                                                                          fontSize: 13,
-                                                                          color: Color(0xFF1E293B),
-                                                                        ),
-                                                                      ),
-                                                                    ],
-                                                                  ),
-                                                                ),
-                                                                 
-                                                                // Timestamp
-                                                                Expanded(
-                                                                  child: Column(
-                                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                                    children: [
-                                                                      const Text(
-                                                                        'Timestamp',
-                                                                        style: TextStyle(
-                                                                          fontSize: 12,
-                                                                          color: Color(0xFF64748B),
-                                                                          fontWeight: FontWeight.w500,
-                                                                        ),
-                                                                      ),
-                                                                      const SizedBox(height: 4),
-                                                                      Text(
-                                                                        timestamp != null
-                                                                            ? DateTime.fromMillisecondsSinceEpoch(timestamp).toString().substring(0, 19)
-                                                                            : 'N/A',
-                                                                        style: const TextStyle(
-                                                                          fontSize: 13,
-                                                                          color: Color(0xFF1E293B),
-                                                                        ),
-                                                                        overflow: TextOverflow.ellipsis,
-                                                                      ),
-                                                                    ],
-                                                                  ),
-                                                                ),
-                                                              ],
+                                                              ),
                                                             ),
                                                              
                                                             // Message Content
@@ -991,7 +998,7 @@ class _TopicsScreenState extends State<TopicsScreen> {
 
     try {
       await Provider.of<KafkaProvider>(context, listen: false)
-          .sendMessage(_selectedTopic!, _messageController.text);
+          .producerProvider.sendMessage(_selectedTopic!, _messageController.text);
       _messageController.clear();
       _showSuccessDialog('Message sent successfully');
     } catch (e) {
@@ -1007,13 +1014,14 @@ class _TopicsScreenState extends State<TopicsScreen> {
     if (_selectedTopic == null) return;
 
     setState(() {
-      _isConsuming = !_isConsuming;
+      // 使用consumer_provider的状态，不再需要本地状态更新
     });
 
     try {
       final kafkaProvider = Provider.of<KafkaProvider>(context, listen: false);
       
-      if (_isConsuming) {
+      // 直接判断consumer_provider的状态，并切换消费状态
+      if (!kafkaProvider.consumerProvider.isConsuming) {
         // 设置消费位置
         int? timestamp;
         if (_useCustomTimestamp && _timestampController.text.isNotEmpty) {
@@ -1023,21 +1031,18 @@ class _TopicsScreenState extends State<TopicsScreen> {
           }
         }
         
-        kafkaProvider.setConsumePosition(
+        kafkaProvider.consumerProvider.setConsumePosition(
           autoOffsetReset: _autoOffsetReset,
           timestamp: timestamp
         );
         
-        await kafkaProvider.startConsuming(_selectedTopic!);
+        await kafkaProvider.consumerProvider.startConsuming(_selectedTopic!);
       } else {
-        await kafkaProvider.stopConsuming();
+        await kafkaProvider.consumerProvider.stopConsuming();
       }
     } catch (e) {
-      setState(() {
-        _isConsuming = false;
-      });
-      _showErrorDialog(e.toString());
-    }
+          _showErrorDialog(e.toString());
+        }
   }
 
   void _disconnect(BuildContext context) {

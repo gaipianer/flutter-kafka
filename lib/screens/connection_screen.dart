@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/kafka_provider.dart';
-import 'topics_screen.dart';
+import 'connection_choice_screen.dart';
 
 class ConnectionScreen extends StatefulWidget {
   const ConnectionScreen({super.key});
@@ -365,10 +365,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         );
 
         if (!mounted) return;
-        Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(builder: (context) => const TopicsScreen()),
-        );
+        Navigator.pushReplacementNamed(context, '/topics');
       } catch (e) {
         setState(() {
           _isConnecting = false;

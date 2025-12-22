@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'providers/kafka_provider.dart';
 import 'screens/connection_screen.dart';
+import 'screens/topic_choice_screen.dart';
+import 'screens/producer_screen.dart';
+import 'screens/consumer_screen.dart';
 
 void main() {
   runApp(
@@ -24,7 +27,13 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const ConnectionScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const ConnectionScreen(),
+        '/topics': (context) => const TopicChoiceScreen(),
+        '/producer': (context) => const ProducerScreen(),
+        '/consumer': (context) => const ConsumerScreen(),
+      },
     );
   }
 }
