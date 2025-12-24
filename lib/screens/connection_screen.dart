@@ -16,6 +16,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   final _nameController = TextEditingController(text: 'Local Kafka');
   final _bootstrapServersController = TextEditingController(text: 'localhost:9092');
   bool _isConnecting = false;
+  bool _isTesting = false;
   bool _showSaveOptions = false;
   
   @override
@@ -43,7 +44,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
+                  color: Colors.black.withOpacity(0.08),
                   spreadRadius: 3,
                   blurRadius: 20,
                   offset: const Offset(0, 10),
@@ -306,30 +307,66 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // 连接按钮
-                  SizedBox(
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _isConnecting ? null : _connect,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: _isConnecting
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Text(
-                              'Connect',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // 连接和测试按钮
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: (_isConnecting || _isTesting) ? null : _testConnection,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
                             ),
-                    ),
+                            icon: _isTesting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.question_mark, size: 20),
+                            label: Text(
+                              _isTesting ? 'Testing...' : 'Test Connection',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: (_isConnecting || _isTesting) ? null : _connect,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2563EB),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: _isConnecting
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : const Text(
+                                    'Connect',
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -375,6 +412,57 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         }
       }
     }
+  }
+
+  Future<void> _testConnection() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isTesting = true;
+      });
+
+      try {
+        final kafkaProvider = Provider.of<KafkaProvider>(context, listen: false);
+        final isConnected = await kafkaProvider.testConnection(_bootstrapServersController.text);
+
+        setState(() {
+          _isTesting = false;
+        });
+
+        if (!mounted) return;
+
+        if (isConnected) {
+          _showSuccessDialog('Connection test successful!');
+        } else {
+          _showErrorDialog('Connection test failed. Please check your configuration.');
+        }
+      } catch (e) {
+        setState(() {
+          _isTesting = false;
+        });
+        if (mounted) {
+          _showErrorDialog('Connection test failed: $e');
+        }
+      }
+    }
+  }
+
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Success',
+          style: TextStyle(color: Color(0xFF10B981)),
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showSavedConnectionsDialog(BuildContext context) {

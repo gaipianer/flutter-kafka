@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:convert';
 
 import '../providers/kafka_provider.dart';
 
@@ -13,8 +14,12 @@ class ProducerScreen extends StatefulWidget {
 class _ProducerScreenState extends State<ProducerScreen> {
   String? _selectedTopic;
   final _messageController = TextEditingController();
+  final _batchMessagesController = TextEditingController();
   bool _isSending = false;
   final List<String> _sentMessages = [];
+  bool _isJsonFormat = false;
+  bool _isBatchMode = false;
+  List<String> _batchMessages = [];
 
   @override
   void initState() {
@@ -424,60 +429,164 @@ class _ProducerScreenState extends State<ProducerScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Row(
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEFF6FF),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Icon(
-                                      Icons.send,
-                                      color: Color(0xFF3B82F6),
-                                      size: 20,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEFF6FF),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: const Icon(
+                                          Icons.send,
+                                          color: Color(0xFF3B82F6),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Text(
+                                        'Send Message',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF1E3A8A),
+                                        ),
+                                      ),
+                                      Expanded(child: Container()),
+                                    ],
                                   ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'Send Message',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF1E3A8A),
-                                    ),
+                                  const SizedBox(height: 12),
+                                  // 模式切换选项
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      // 批量发送模式切换
+                                      Row(
+                                        children: [
+                                          Switch(
+                                            value: _isBatchMode,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _isBatchMode = value;
+                                                if (value) {
+                                                  _isJsonFormat = false; // 批量模式下暂时不支持JSON
+                                                }
+                                              });
+                                            },
+                                            activeColor: const Color(0xFF3B82F6),
+                                          ),
+                                          const Text(
+                                            'Batch Mode',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 20),
-                              TextField(
-                                controller: _messageController,
-                                decoration: InputDecoration(
-                                  labelText: 'Message content',
-                                  hintText: 'Enter your message here...',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFFCBD5E1),
-                                      width: 2,
+                              const SizedBox(height: 16),
+                              // 消息格式化选项
+                              if (!_isBatchMode)
+                                Row(
+                                  children: [
+                                    Switch(
+                                      value: _isJsonFormat,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _isJsonFormat = value;
+                                        });
+                                      },
+                                      activeColor: const Color(0xFF3B82F6),
                                     ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: const BorderSide(
-                                      color: Color(0xFF3B82F6),
-                                      width: 2,
+                                    const Text(
+                                      'JSON Format',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF64748B),
+                                      ),
                                     ),
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  contentPadding: const EdgeInsets.all(16),
+                                  ],
                                 ),
-                                maxLines: 5,
-                                minLines: 3,
-                                textInputAction: TextInputAction.newline,
-                              ),
+                              const SizedBox(height: 20),
+                              // 消息输入区域
+                              if (!_isBatchMode)
+                                TextField(
+                                  controller: _messageController,
+                                  decoration: InputDecoration(
+                                    labelText: _isJsonFormat ? 'JSON Message' : 'Message content',
+                                    hintText: _isJsonFormat 
+                                      ? '{key: value, number: 123}' 
+                                      : 'Enter your message here...',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFFCBD5E1),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(
+                                        color: Color(0xFF3B82F6),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    contentPadding: const EdgeInsets.all(16),
+                                  ),
+                                  maxLines: 5,
+                                  minLines: 3,
+                                  textInputAction: TextInputAction.newline,
+                                )
+                              else
+                                Column(
+                                  children: [
+                                    TextField(
+                                      controller: _batchMessagesController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Batch Messages',
+                                        hintText: 'Enter one message per line...\nMessage 1\nMessage 2\nMessage 3',
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFFCBD5E1),
+                                            width: 2,
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                          borderSide: const BorderSide(
+                                            color: Color(0xFF3B82F6),
+                                            width: 2,
+                                          ),
+                                        ),
+                                        filled: true,
+                                        fillColor: Colors.white,
+                                        contentPadding: const EdgeInsets.all(16),
+                                      ),
+                                      maxLines: 10,
+                                      minLines: 5,
+                                      textInputAction: TextInputAction.newline,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      '${_batchMessagesController.text.split('\n').where((msg) => msg.trim().isNotEmpty).length} messages prepared',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               const SizedBox(height: 20),
                               ElevatedButton.icon(
                                 onPressed: _isSending ? null : () => _sendMessage(context),
@@ -491,11 +600,11 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                         ),
                                       )
                                     : const Icon(Icons.send),
-                                label: const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                label: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
                                   child: Text(
-                                    'Send Message',
-                                    style: TextStyle(
+                                    _isBatchMode ? 'Send Batch' : 'Send Message',
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -603,9 +712,16 @@ class _ProducerScreenState extends State<ProducerScreen> {
 
   Future<void> _sendMessage(BuildContext context) async {
     final kafkaProvider = Provider.of<KafkaProvider>(context, listen: false);
-    final message = _messageController.text.trim();
-
-    if (_selectedTopic == null || message.isEmpty) {
+    
+    if (_selectedTopic == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please select a topic first'),
+            backgroundColor: const Color(0xFFF59E0B),
+          ),
+        );
+      }
       return;
     }
 
@@ -614,23 +730,74 @@ class _ProducerScreenState extends State<ProducerScreen> {
     });
 
     try {
-        await kafkaProvider.producerProvider.sendMessage(_selectedTopic!, message);
-      
-      setState(() {
-        _sentMessages.add(message);
-        if (_sentMessages.length > 10) {
-          _sentMessages.removeAt(0);
+      if (!_isBatchMode) {
+        // 单条消息发送
+        final message = _messageController.text.trim();
+        if (message.isEmpty) {
+          throw Exception('Message content cannot be empty');
         }
-        _messageController.clear();
-      });
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Message sent to topic $_selectedTopic'),
-            backgroundColor: const Color(0xFF10B981),
-          ),
-        );
+        
+        String processedMessage = message;
+        if (_isJsonFormat) {
+          // 简单的JSON验证（可以根据需要增强）
+          processedMessage = _formatJson(message);
+        }
+        
+        await kafkaProvider.producerProvider.sendMessage(_selectedTopic!, processedMessage);
+        
+        setState(() {
+          _sentMessages.add(processedMessage);
+          if (_sentMessages.length > 10) {
+            _sentMessages.removeAt(0);
+          }
+          _messageController.clear();
+        });
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Message sent to topic $_selectedTopic'),
+              backgroundColor: const Color(0xFF10B981),
+            ),
+          );
+        }
+      } else {
+        // 批量消息发送
+        final messages = _batchMessagesController.text
+            .split('\n')
+            .map((msg) => msg.trim())
+            .where((msg) => msg.isNotEmpty)
+            .toList();
+        
+        if (messages.isEmpty) {
+          throw Exception('No messages to send in batch mode');
+        }
+        
+        int sentCount = 0;
+        for (final message in messages) {
+          await kafkaProvider.producerProvider.sendMessage(_selectedTopic!, message);
+          sentCount++;
+        }
+        
+        setState(() {
+          // 只添加最后一条消息到历史记录
+          if (messages.isNotEmpty) {
+            _sentMessages.add(messages.last);
+            if (_sentMessages.length > 10) {
+              _sentMessages.removeAt(0);
+            }
+          }
+          _batchMessagesController.clear();
+        });
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Successfully sent $sentCount/${messages.length} messages to topic $_selectedTopic'),
+              backgroundColor: const Color(0xFF10B981),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -645,6 +812,18 @@ class _ProducerScreenState extends State<ProducerScreen> {
       setState(() {
         _isSending = false;
       });
+    }
+  }
+  
+  String _formatJson(String message) {
+    // 实现真正的JSON验证和格式化
+    try {
+      // 解析JSON字符串
+      final jsonObject = jsonDecode(message);
+      // 重新编码为格式化的JSON字符串
+      return jsonEncode(jsonObject);
+    } catch (e) {
+      throw Exception('Invalid JSON format');
     }
   }
 

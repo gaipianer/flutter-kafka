@@ -113,6 +113,28 @@ class KafkaProvider extends ChangeNotifier {
     }
   }
 
+  /// 测试与Kafka集群的连接
+  Future<bool> testConnection(String bootstrapServers) async {
+    try {
+      developer.log('Testing connection to Kafka at $bootstrapServers via FFI');
+      
+      // 创建临时客户端进行测试
+      final tempClient = KafkaFFI.createProducer(bootstrapServers);
+      
+      // 尝试获取主题列表，验证连接是否成功
+      final topics = KafkaFFI.getTopics(tempClient);
+      
+      // 关闭临时客户端
+      KafkaFFI.closeClient(tempClient);
+      
+      developer.log('Connection test successful. Found ${topics.length} topics');
+      return true;
+    } catch (e, stackTrace) {
+      developer.log('Connection test failed: $e', stackTrace: stackTrace);
+      return false;
+    }
+  }
+
   Future<void> connect(String bootstrapServers, {String? connectionName}) async {
     try {
       KafkaConnection connection = KafkaConnection(
