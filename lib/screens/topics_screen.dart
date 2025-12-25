@@ -739,6 +739,1261 @@ class _TopicsScreenState extends State<TopicsScreen> {
                                                               .isConsuming
                                                           ? Icons.stop
                                                           : Icons.play_arrow,
+                                                      size: 16,
+                                                    ),
+                                                    label: Text(
+                                                      kafkaProvider
+                                                              .consumerProvider
+                                                              .isConsuming
+                                                          ? 'Stop'
+                                                          : 'Start',
+                                                      style: const TextStyle(
+                                                          fontWeight: FontWeight
+                                                              .bold),
+                                                    ),
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor: kafkaProvider
+                                                              .consumerProvider
+                                                              .isConsuming
+                                                          ? const Color(
+                                                              0xFFEF4444)
+                                                          : const Color(
+                                                              0xFF10B981),
+                                                      shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8)),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+
+                                              const SizedBox(height: 16),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        border: Border.all(
+                                                            color: const Color(
+                                                                0xFFE2E8F0),
+                                                            width: 2),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                      ),
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          const Padding(
+                                                            padding: EdgeInsets
+                                                                    .symmetric(
+                                                                horizontal: 12,
+                                                                vertical: 8),
+                                                            child: Text(
+                                                              'Auto Offset Reset',
+                                                              style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 12,
+                                                                color: Color(
+                                                                    0xFF475569),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          Row(
+                                                            children: [
+                                                              Expanded(
+                                                                child: RadioListTile(
+                                                                  value: 'earliest',
+                                                                  groupValue: _autoOffsetReset,
+                                                                  onChanged: (value) {
+                                                                    setState(() {
+                                                                      _autoOffsetReset = 'earliest';
+                                                                    });
+                                                                  },
+                                                                  title: const Text('Earliest'),
+                                                                  activeColor: const Color(0xFF3B82F6),
+                                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                                                  dense: true,
+                                                                  visualDensity: VisualDensity.compact,
+                                                                ),
+                                                              ),
+                                                              Expanded(
+                                                                child: RadioListTile(
+                                                                  value: 'latest',
+                                                                  groupValue: _autoOffsetReset,
+                                                                  onChanged: (value) {
+                                                                    setState(() {
+                                                                      _autoOffsetReset = 'latest';
+                                                                    });
+                                                                  },
+                                                                  title: const Text('Latest'),
+                                                                  activeColor: const Color(0xFF3B82F6),
+                                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                                                  dense: true,
+                                                                  visualDensity: VisualDensity.compact,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+
+                                                  const SizedBox(width: 16),
+
+                                                  Expanded(
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        border: Border.all(
+                                                            color: const Color(
+                                                                0xFFE2E8F0),
+                                                            width: 2),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(8),
+                                                      ),
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          const Padding(
+                                                            padding: EdgeInsets
+                                                                    .symmetric(
+                                                                horizontal: 12,
+                                                                vertical: 8),
+                                                            child: Text(
+                                                              'Seek to Timestamp',
+                                                              style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 12,
+                                                                color: Color(
+                                                                    0xFF475569),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          Row(
+                                                            children: [
+                                                              Expanded(
+                                                                child: CheckboxListTile(
+                                                                  value: _useCustomTimestamp,
+                                                                  onChanged: (value) {
+                                                                    setState(() {
+                                                                      _useCustomTimestamp = value!;
+                                                                    });
+                                                                  },
+                                                                  title: const Text('Use custom'),
+                                                                  activeColor: const Color(0xFF3B82F6),
+                                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                                                  dense: true,
+                                                                  visualDensity: VisualDensity.compact,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+
+                                                          if (_useCustomTimestamp)
+                                                            Padding(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                              child: TextField(
+                                                                controller: _timestampController,
+                                                                decoration: const InputDecoration(
+                                                                  labelText: 'Timestamp (ms)',
+                                                                  labelStyle: TextStyle(fontSize: 12),
+                                                                  border: OutlineInputBorder(),
+                                                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                                ),
+                                                                keyboardType: TextInputType.number,
+                                                                style: const TextStyle(fontSize: 12),
+                                                              ),
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+
+                                              const SizedBox(height: 16),
+                                              ElevatedButton.icon(
+                                                onPressed: _seekToTimestamp,
+                                                icon: const Icon(Icons.time_to_leave,
+                                                    size: 16),
+                                                label: const Text('Seek'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFF64748B),
+                                                  shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius
+                                                              .circular(8)),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+
+                                      // 消息列表
+                                      Expanded(
+                                        child: Consumer<ConsumerProvider>(
+                                          builder: (context, provider, child) {
+                                            return ListView.builder(
+                                              itemCount: provider.messages.length,
+                                              itemBuilder: (context, index) {
+                                                final message = provider.messages[index];
+                                                return Container(
+                                                  padding: const EdgeInsets.all(16),
+                                                  decoration: BoxDecoration(
+                                                    border: Border(
+                                                        bottom: BorderSide(
+                                                            color: const Color(
+                                                                0xFFE2E8F0),
+                                                            width: 1)),
+                                                  ),
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          Text(
+                                                            'Offset: ${message.offset}',
+                                                            style: const TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color: Color(
+                                                                  0xFF1E3A8A),
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            'Partition: ${message.partition}',
+                                                            style: const TextStyle(
+                                                              color: Color(
+                                                                  0xFF64748B),
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            '${DateTime.fromMillisecondsSinceEpoch(message.timestamp).toString()}',
+                                                            style: const TextStyle(
+                                                              fontSize: 12,
+                                                              color: Color(
+                                                                  0xFF94A3B8),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(
+                                                        message.content,
+                                                        style: const TextStyle(
+                                                          color: Color(
+                                                              0xFF334155),
+                                                        ),
+                                                        overflow: TextOverflow
+                                                            .visible,
+                                                        softWrap: true,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Expanded(
+                      flex: 3, // 大屏右侧区域占比3
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 主题信息卡片
+                            if (_selectedTopic != null)
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text(
+                                            'Topic Information',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                          Row(
+                                            children: [
+                                              ElevatedButton.icon(
+                                                onPressed: () {
+                                                  // 导航到消费者页面
+                                                  Navigator.pushNamed(
+                                                      context, '/consumer',
+                                                      arguments: {
+                                                        'topic': _selectedTopic,
+                                                        'connection': kafkaProvider
+                                                            .currentConnection,
+                                                      });
+                                                },
+                                                icon: const Icon(Icons.arrow_right,
+                                                    size: 16),
+                                                label: const Text('Consumer'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      const Color(0xFF10B981),
+                                                  shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(8)),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              ElevatedButton.icon(
+                                                onPressed: () {
+                                                  // 导航到生产者页面
+                                                  Navigator.pushNamed(
+                                                      context, '/producer',
+                                                      arguments: {
+                                                        'topic': _selectedTopic,
+                                                        'connection': kafkaProvider
+                                                            .currentConnection,
+                                                      });
+                                                },
+                                                icon: const Icon(Icons.arrow_right,
+                                                    size: 16),
+                                                label: const Text('Producer'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      const Color(0xFF3B82F6),
+                                                  shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(8)),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Topic: $_selectedTopic',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF475569),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                            const SizedBox(height: 24),
+                            // 消息发送区域
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEFF6FF),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              child: const Icon(
+                                                Icons.send,
+                                                color: Color(0xFF3B82F6),
+                                                size: 20,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            const Text(
+                                              'Send Message',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF1E3A8A),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Switch(
+                                          value: _isBatchMode,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _isBatchMode = value;
+                                            });
+                                          },
+                                          activeColor: const Color(0xFF3B82F6),
+                                          inactiveTrackColor:
+                                              const Color(0xFFCBD5E1),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextField(
+                                      controller: _messageController,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
+                                              color: Color(0xFFE2E8F0)),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
+                                              color: Color(0xFF3B82F6)),
+                                        ),
+                                        hintText: _isBatchMode
+                                            ? 'Enter messages (one per line)...'
+                                            : 'Enter message content...',
+                                        hintStyle: const TextStyle(
+                                          color: Color(0xFF94A3B8),
+                                          fontSize: 14,
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.all(16),
+                                        suffixIcon: IconButton(
+                                          icon: const Icon(Icons.clear),
+                                          onPressed: () =>
+                                              _messageController.clear(),
+                                        ),
+                                      ),
+                                      maxLines: _isBatchMode ? 8 : 4,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: _sendMessage,
+                                      icon: _isSending
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(
+                                              _isBatchMode
+                                                  ? 'Send Batch'
+                                                  : 'Send Message',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                      label: const SizedBox(),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFF3B82F6),
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 24, vertical: 12),
+                                        minimumSize: const Size.fromHeight(50),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+                            // 消息消费区域
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: MediaQuery.of(context).size.width -
+                                      32, // 确保有足够的最小宽度
+                                  minHeight: 500,
+                                ),
+                                child: Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  child: Column(
+                                    children: [
+                                      // 消费者配置（更窄）
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: double.infinity,
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(20),
+                                          decoration: const BoxDecoration(
+                                            border: Border(
+                                                bottom: BorderSide(
+                                                    color: Color(0xFFE2E8F0),
+                                                    width: 2)),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 40,
+                                                        height: 40,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: const Color(
+                                                              0xFFF0FDF4),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(10),
+                                                        ),
+                                                        child: const Icon(
+                                                          Icons.download,
+                                                          color:
+                                                              Color(0xFF10B981),
+                                                          size: 20,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      const Text(
+                                                        'Consume',
+                                                        style: TextStyle(
+                                                          fontSize: 18,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color:
+                                                              Color(0xFF1E3A8A),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  ElevatedButton.icon(
+                                                    onPressed: _toggleConsuming,
+                                                    icon: Icon(
+                                                      kafkaProvider
+                                                              .consumerProvider
+                                                              .isConsuming
+                                                          ? Icons.stop
+                                                          : Icons.play_arrow,
+                                                      color: Colors.white,
+                                                      size: 20,
+                                                    ),
+                                                    label: Text(
+                                                      kafkaProvider
+                                                              .consumerProvider
+                                                              .isConsuming
+                                                          ? 'Stop'
+                                                          : 'Start',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    style: ElevatedButton
+                                                        .styleFrom(
+                                                      backgroundColor:
+                                                          kafkaProvider
+                                                                  .consumerProvider
+                                                                  .isConsuming
+                                                              ? const Color(
+                                                                  0xFFEF4444)
+                                                              : const Color(
+                                                                  0xFF10B981),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(8)),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 20),
+
+                                              // 消费位置设置
+                                              const Text(
+                                                'Consume Position',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF475569),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Row(
+                                                children: [
+                                                  Radio<String>(
+                                                    value: 'earliest',
+                                                    groupValue:
+                                                        _autoOffsetReset,
+                                                    onChanged: (value) {
+                                                      if (value != null) {
+                                                        setState(() {
+                                                          _autoOffsetReset = value;
+                                                        });
+                                                      }
+                                                    },
+                                                    activeColor: const Color(0xFF3B82F6),
+                                                  ),
+                                                  const Text(
+                                                    'Earliest',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: Color(0xFF334155),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 20),
+                                                  Radio<String>(
+                                                    value: 'latest',
+                                                    groupValue:
+                                                        _autoOffsetReset,
+                                                    onChanged: (value) {
+                                                      if (value != null) {
+                                                        setState(() {
+                                                          _autoOffsetReset = value;
+                                                        });
+                                                      }
+                                                    },
+                                                    activeColor: const Color(0xFF3B82F6),
+                                                  ),
+                                                  const Text(
+                                                    'Latest',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: Color(0xFF334155),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+
+                                              // 自定义时间戳选项
+                                              const SizedBox(height: 16),
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.start,
+                                                children: [
+                                                  Checkbox(
+                                                    value: _useCustomTimestamp,
+                                                    onChanged: (value) {
+                                                      setState(() {
+                                                        _useCustomTimestamp = value ?? false;
+                                                      });
+                                                    },
+                                                    activeColor: const Color(0xFF3B82F6),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  const Text(
+                                                    'Use Custom Timestamp',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: Color(0xFF334155),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+
+                                              if (_useCustomTimestamp)
+                                                Column(
+                                                  children: [
+                                                    const SizedBox(height: 12),
+                                                    TextField(
+                                                      controller: _timestampController,
+                                                      decoration: InputDecoration(
+                                                        labelText: 'Timestamp (ms since epoch)',
+                                                        labelStyle: const TextStyle(
+                                                          color: Color(0xFF64748B),
+                                                          fontSize: 14,
+                                                        ),
+                                                        border: OutlineInputBorder(
+                                                          borderRadius: BorderRadius.circular(8),
+                                                          borderSide: const BorderSide(
+                                                              color: Color(0xFFE2E8F0)),
+                                                        ),
+                                                        focusedBorder: OutlineInputBorder(
+                                                          borderRadius: BorderRadius.circular(8),
+                                                          borderSide: const BorderSide(
+                                                              color: Color(0xFF3B82F6)),
+                                                        ),
+                                                        contentPadding: const EdgeInsets.symmetric(
+                                                            horizontal: 16, vertical: 12),
+                                                      ),
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Color(0xFF1E293B),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    const Text(
+                                                      'Enter timestamp in milliseconds since epoch',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: Color(0xFF94A3B8),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+
+                                      // 消息列表
+                                      Expanded(
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Text(
+                                                    'Messages (${kafkaProvider.consumerProvider.messages.length})',
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Color(0xFF1E293B),
+                                                    ),
+                                                  ),
+                                                  if (kafkaProvider
+                                                      .consumerProvider
+                                                      .messages
+                                                      .isNotEmpty)
+                                                    TextButton.icon(
+                                                      onPressed: () =>
+                                                          kafkaProvider
+                                                              .consumerProvider
+                                                              .clearMessages(),
+                                                      icon: const Icon(
+                                                          Icons.delete_outline,
+                                                          size: 16),
+                                                      label: const Text(
+                                                          'Clear All'),
+                                                      style: TextButton.styleFrom(
+                                                        foregroundColor:
+                                                            const Color(
+                                                                0xFFEF4444),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 16),
+
+                                              // 消息列表
+                                              Expanded(
+                                                child: ListView.builder(
+                                                  reverse: true,
+                                                  itemCount: kafkaProvider
+                                                      .consumerProvider
+                                                      .messages
+                                                      .length,
+                                                  itemBuilder: (context, index) {
+                                                    final message = kafkaProvider
+                                                        .consumerProvider
+                                                        .messages[index];
+                                                    final content = message['content'] as String;
+                                                    final partition = message['partition'] as int;
+                                                    final offset = message['offset'] as int;
+                                                    final timestamp = message['timestamp'] as int?;
+
+                                                    // 判断是否为JSON
+                                                    bool isJson = false;
+                                                    try {
+                                                      final json = message['json'];
+                                                      isJson = json != null;
+                                                    } catch (_) {
+                                                      // Not JSON
+                                                    }
+
+                                                    return Card(
+                                                      margin: const EdgeInsets.only(
+                                                          bottom: 12),
+                                                      elevation: 1,
+                                                      shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(10)),
+                                                      child: Padding(
+                                                        padding: const EdgeInsets.all(12),
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment.start,
+                                                          children: [
+                                                            // 消息元数据 - Key/Partition/Timestamp
+                                                            Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .spaceBetween,
+                                                              children: [
+                                                                // Key and Partition
+                                                                Row(
+                                                                  children: [
+                                                                    ConstrainedBox(
+                                                                      constraints: const BoxConstraints(
+                                                                          maxWidth: 150),
+                                                                      child: Text(
+                                                                        'Offset: $offset',
+                                                                        style: const TextStyle(
+                                                                          fontSize: 12,
+                                                                          color: Color(0xFF64748B),
+                                                                          fontWeight: FontWeight.w500,
+                                                                        ),
+                                                                        overflow: TextOverflow.ellipsis,
+                                                                      ),
+                                                                    ),
+                                                                    const SizedBox(width: 12),
+                                                                    Text(
+                                                                      'Partition: $partition',
+                                                                      style: const TextStyle(
+                                                                        fontSize: 12,
+                                                                        color: Color(0xFF64748B),
+                                                                        fontWeight: FontWeight.w500,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+
+                                                                // Timestamp
+                                                                ConstrainedBox(
+                                                                  constraints: const BoxConstraints(
+                                                                      maxWidth: 180),
+                                                                  child: Text(
+                                                                    timestamp != null
+                                                                        ? DateTime.fromMillisecondsSinceEpoch(timestamp)
+                                                                            .toString()
+                                                                            .substring(0, 19)
+                                                                        : 'N/A',
+                                                                    style: const TextStyle(
+                                                                      fontSize: 12,
+                                                                      color: Color(0xFF64748B),
+                                                                      fontWeight: FontWeight.w500,
+                                                                    ),
+                                                                    overflow: TextOverflow.ellipsis,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+
+                                                            // Message Content
+                                                            const SizedBox(height: 12),
+                                                            Container(
+                                                              padding: const EdgeInsets.all(12),
+                                                              decoration: BoxDecoration(
+                                                                color: const Color(0xFFF8FAFC),
+                                                                borderRadius: BorderRadius.circular(8),
+                                                                border: Border.all(
+                                                                  color: const Color(0xFFE2E8F0),
+                                                                  width: 1,
+                                                                ),
+                                                              ),
+                                                              child: Column(
+                                                                crossAxisAlignment:
+                                                                    CrossAxisAlignment.start,
+                                                                children: [
+                                                                  Row(
+                                                                    children: [
+                                                                      Text(
+                                                                        'Content',
+                                                                        style: TextStyle(
+                                                                          fontSize: 12,
+                                                                          fontWeight: FontWeight.bold,
+                                                                          color: Color(0xFF475569),
+                                                                        ),
+                                                                      ),
+                                                                      if (isJson)
+                                                                        Padding(
+                                                                          padding: const EdgeInsets.only(left: 8),
+                                                                          child: Container(
+                                                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                                            decoration: BoxDecoration(
+                                                                              color: Color(0xFF34D399),
+                                                                              borderRadius: BorderRadius.circular(8),
+                                                                            ),
+                                                                            child: const Text(
+                                                                              'JSON',
+                                                                              style: TextStyle(
+                                                                                fontSize: 8,
+                                                                                fontWeight: FontWeight.bold,
+                                                                                color: Colors.white,
+                                                                              ),
+                                                                            ),
+                                                                          ),
+                                                                        ),
+                                                                    ],
+                                                                  ),
+                                                                  const SizedBox(height: 8),
+                                                                  SingleChildScrollView(
+                                                                    scrollDirection: Axis.horizontal,
+                                                                    child: SelectableText(
+                                                                      content,
+                                                                      style: const TextStyle(
+                                                                        fontSize: 13,
+                                                                        color: Color(0xFF1E293B),
+                                                                        fontFamily: 'Monaco',
+                                                                        height: 1.5,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Expanded(
+                      flex: 3,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 主题信息卡片
+                            if (_selectedTopic != null)
+                              Card(
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text(
+                                            'Topic Information',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                          ElevatedButton.icon(
+                                            onPressed: () {
+                                              // 导航到消费者页面
+                                              Navigator.pushNamed(
+                                                  context, '/consumer',
+                                                  arguments: {
+                                                    'topic': _selectedTopic,
+                                                    'connection': kafkaProvider
+                                                        .currentConnection,
+                                                  });
+                                            },
+                                            icon: const Icon(Icons.arrow_right,
+                                                size: 16),
+                                            label: const Text('Consumer'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  const Color(0xFF10B981),
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Topic: $_selectedTopic',
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Color(0xFF475569),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                            const SizedBox(height: 24),
+                            // 消息发送区域
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFEFF6FF),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                              ),
+                                              child: const Icon(
+                                                Icons.send,
+                                                color: Color(0xFF3B82F6),
+                                                size: 20,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            const Text(
+                                              'Send Message',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF1E3A8A),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Switch(
+                                          value: _isBatchMode,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _isBatchMode = value;
+                                            });
+                                          },
+                                          activeColor: const Color(0xFF3B82F6),
+                                          inactiveTrackColor:
+                                              const Color(0xFFCBD5E1),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    TextField(
+                                      controller: _messageController,
+                                      decoration: InputDecoration(
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
+                                              color: Color(0xFFE2E8F0)),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
+                                              color: Color(0xFF3B82F6)),
+                                        ),
+                                        hintText: _isBatchMode
+                                            ? 'Enter messages (one per line)...'
+                                            : 'Enter message content...',
+                                        hintStyle: const TextStyle(
+                                          color: Color(0xFF94A3B8),
+                                          fontSize: 14,
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.all(16),
+                                        suffixIcon: IconButton(
+                                          icon: const Icon(Icons.clear),
+                                          onPressed: () =>
+                                              _messageController.clear(),
+                                        ),
+                                      ),
+                                      maxLines: _isBatchMode ? 8 : 4,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton.icon(
+                                      onPressed: _sendMessage,
+                                      icon: _isSending
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : Text(
+                                              _isBatchMode
+                                                  ? 'Send Batch'
+                                                  : 'Send Message',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                      label: const SizedBox(),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFF3B82F6),
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12)),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 24, vertical: 12),
+                                        minimumSize: const Size.fromHeight(50),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+                            // 消息消费区域
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minWidth: MediaQuery.of(context).size.width -
+                                      32, // 确保有足够的最小宽度
+                                  minHeight: 500,
+                                ),
+                                child: Card(
+                                  elevation: 2,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  child: Column(
+                                    children: [
+                                      // 消费者配置（更窄）
+                                      ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: double.infinity,
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(20),
+                                          decoration: const BoxDecoration(
+                                            border: Border(
+                                                bottom: BorderSide(
+                                                    color: Color(0xFFE2E8F0),
+                                                    width: 2)),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 40,
+                                                        height: 40,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: const Color(
+                                                              0xFFF0FDF4),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(10),
+                                                        ),
+                                                        child: const Icon(
+                                                          Icons.download,
+                                                          color:
+                                                              Color(0xFF10B981),
+                                                          size: 20,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      const Text(
+                                                        'Consume',
+                                                        style: TextStyle(
+                                                          fontSize: 18,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color:
+                                                              Color(0xFF1E3A8A),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  ElevatedButton.icon(
+                                                    onPressed: _toggleConsuming,
+                                                    icon: Icon(
+                                                      kafkaProvider
+                                                              .consumerProvider
+                                                              .isConsuming
+                                                          ? Icons.stop
+                                                          : Icons.play_arrow,
                                                       color: Colors.white,
                                                       size: 20,
                                                     ),
