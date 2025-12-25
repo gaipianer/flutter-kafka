@@ -115,8 +115,10 @@ class _TopicsScreenState extends State<TopicsScreen> {
         builder: (context, constraints) {
           final isSmallScreen = constraints.maxWidth < 800;
 
-          return Column(
-            children: [
+          // 小屏幕使用垂直布局，大屏幕使用水平分栏布局
+          if (isSmallScreen) {
+            return Column(
+              children: [
               // 主题列表区域 - 根据屏幕大小调整布局
               isSmallScreen
                   ? Container(
@@ -662,362 +664,347 @@ class _TopicsScreenState extends State<TopicsScreen> {
 
                             const SizedBox(height: 24),
                             // 消息消费区域
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minWidth: MediaQuery.of(context).size.width -
-                                      32, // 确保有足够的最小宽度
-                                  minHeight: 500,
-                                ),
-                                child: Card(
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                  child: Column(
-                                    children: [
-                                      // 消费者配置（更窄）
-                                      ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: double.infinity,
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              child: Column(
+                                children: [
+                                  // 消费者配置
+                                  Container(
+                                    padding: const EdgeInsets.all(20),
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                          bottom: BorderSide(
+                                              color: Color(0xFFE2E8F0),
+                                              width: 2)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment
+                                                  .spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  width: 40,
+                                                  height: 40,
+                                                  decoration:
+                                                      BoxDecoration(
+                                                    color: const Color(
+                                                        0xFFF0FDF4),
+                                                    borderRadius:
+                                                        BorderRadius
+                                                            .circular(10),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.download,
+                                                    color:
+                                                        Color(0xFF10B981),
+                                                    size: 20,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                const Text(
+                                                  'Consume',
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                    color:
+                                                        Color(0xFF1E3A8A),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            ElevatedButton.icon(
+                                              onPressed: _toggleConsuming,
+                                              icon: Icon(
+                                                kafkaProvider
+                                                        .consumerProvider
+                                                        .isConsuming
+                                                    ? Icons.stop
+                                                    : Icons.play_arrow,
+                                                size: 16,
+                                              ),
+                                              label: Text(
+                                                kafkaProvider
+                                                        .consumerProvider
+                                                        .isConsuming
+                                                    ? 'Stop'
+                                                    : 'Start',
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight
+                                                        .bold),
+                                              ),
+                                              style: ElevatedButton
+                                                  .styleFrom(
+                                                backgroundColor: kafkaProvider
+                                                        .consumerProvider
+                                                        .isConsuming
+                                                    ? const Color(
+                                                        0xFFEF4444)
+                                                    : const Color(
+                                                        0xFF10B981),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius
+                                                            .circular(8)),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(20),
-                                          decoration: const BoxDecoration(
-                                            border: Border(
-                                                bottom: BorderSide(
-                                                    color: Color(0xFFE2E8F0),
-                                                    width: 2)),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.stretch,
-                                            children: [
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Container(
-                                                        width: 40,
-                                                        height: 40,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: const Color(
-                                                              0xFFF0FDF4),
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
-                                                        child: const Icon(
-                                                          Icons.download,
-                                                          color:
-                                                              Color(0xFF10B981),
-                                                          size: 20,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 12),
-                                                      const Text(
-                                                        'Consume',
+
+                                        const SizedBox(height: 16),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(
+                                                      color: const Color(
+                                                          0xFFE2E8F0),
+                                                      width: 2),
+                                                  borderRadius:
+                                                      BorderRadius
+                                                          .circular(8),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .start,
+                                                  children: [
+                                                    const Padding(
+                                                      padding: EdgeInsets
+                                                              .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 8),
+                                                      child: Text(
+                                                        'Auto Offset Reset',
                                                         style: TextStyle(
-                                                          fontSize: 18,
                                                           fontWeight:
-                                                              FontWeight.bold,
-                                                          color:
-                                                              Color(0xFF1E3A8A),
+                                                              FontWeight
+                                                                  .bold,
+                                                          fontSize: 12,
+                                                          color: Color(
+                                                              0xFF475569),
                                                         ),
                                                       ),
-                                                    ],
-                                                  ),
-                                                  ElevatedButton.icon(
-                                                    onPressed: _toggleConsuming,
-                                                    icon: Icon(
-                                                      kafkaProvider
-                                                              .consumerProvider
-                                                              .isConsuming
-                                                          ? Icons.stop
-                                                          : Icons.play_arrow,
-                                                      size: 16,
                                                     ),
-                                                    label: Text(
-                                                      kafkaProvider
-                                                              .consumerProvider
-                                                              .isConsuming
-                                                          ? 'Stop'
-                                                          : 'Start',
-                                                      style: const TextStyle(
-                                                          fontWeight: FontWeight
-                                                              .bold),
-                                                    ),
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor: kafkaProvider
-                                                              .consumerProvider
-                                                              .isConsuming
-                                                          ? const Color(
-                                                              0xFFEF4444)
-                                                          : const Color(
-                                                              0xFF10B981),
-                                                      shape: RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(8)),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-
-                                              const SizedBox(height: 16),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            color: const Color(
-                                                                0xFFE2E8F0),
-                                                            width: 2),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                      ),
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          const Padding(
-                                                            padding: EdgeInsets
-                                                                    .symmetric(
-                                                                horizontal: 12,
-                                                                vertical: 8),
-                                                            child: Text(
-                                                              'Auto Offset Reset',
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 12,
-                                                                color: Color(
-                                                                    0xFF475569),
-                                                              ),
-                                                            ),
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: RadioListTile(
+                                                            value: 'earliest',
+                                                            groupValue: _autoOffsetReset,
+                                                            onChanged: (value) {
+                                                              setState(() {
+                                                                _autoOffsetReset = 'earliest';
+                                                              });
+                                                            },
+                                                            title: const Text('Earliest'),
+                                                            activeColor: const Color(0xFF3B82F6),
+                                                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                                            dense: true,
+                                                            visualDensity: VisualDensity.compact,
                                                           ),
-                                                          Row(
-                                                            children: [
-                                                              Expanded(
-                                                                child: RadioListTile(
-                                                                  value: 'earliest',
-                                                                  groupValue: _autoOffsetReset,
-                                                                  onChanged: (value) {
-                                                                    setState(() {
-                                                                      _autoOffsetReset = 'earliest';
-                                                                    });
-                                                                  },
-                                                                  title: const Text('Earliest'),
-                                                                  activeColor: const Color(0xFF3B82F6),
-                                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                                                                  dense: true,
-                                                                  visualDensity: VisualDensity.compact,
-                                                                ),
-                                                              ),
-                                                              Expanded(
-                                                                child: RadioListTile(
-                                                                  value: 'latest',
-                                                                  groupValue: _autoOffsetReset,
-                                                                  onChanged: (value) {
-                                                                    setState(() {
-                                                                      _autoOffsetReset = 'latest';
-                                                                    });
-                                                                  },
-                                                                  title: const Text('Latest'),
-                                                                  activeColor: const Color(0xFF3B82F6),
-                                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                                                                  dense: true,
-                                                                  visualDensity: VisualDensity.compact,
-                                                                ),
-                                                              ),
-                                                            ],
+                                                        ),
+                                                        Expanded(
+                                                          child: RadioListTile(
+                                                            value: 'latest',
+                                                            groupValue: _autoOffsetReset,
+                                                            onChanged: (value) {
+                                                              setState(() {
+                                                                _autoOffsetReset = 'latest';
+                                                              });
+                                                            },
+                                                            title: const Text('Latest'),
+                                                            activeColor: const Color(0xFF3B82F6),
+                                                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                                            dense: true,
+                                                            visualDensity: VisualDensity.compact,
                                                           ),
-                                                        ],
-                                                      ),
+                                                        ),
+                                                      ],
                                                     ),
-                                                  ),
-
-                                                  const SizedBox(width: 16),
-
-                                                  Expanded(
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            color: const Color(
-                                                                0xFFE2E8F0),
-                                                            width: 2),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(8),
-                                                      ),
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          const Padding(
-                                                            padding: EdgeInsets
-                                                                    .symmetric(
-                                                                horizontal: 12,
-                                                                vertical: 8),
-                                                            child: Text(
-                                                              'Seek to Timestamp',
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 12,
-                                                                color: Color(
-                                                                    0xFF475569),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          Row(
-                                                            children: [
-                                                              Expanded(
-                                                                child: CheckboxListTile(
-                                                                  value: _useCustomTimestamp,
-                                                                  onChanged: (value) {
-                                                                    setState(() {
-                                                                      _useCustomTimestamp = value!;
-                                                                    });
-                                                                  },
-                                                                  title: const Text('Use custom'),
-                                                                  activeColor: const Color(0xFF3B82F6),
-                                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                                                                  dense: true,
-                                                                  visualDensity: VisualDensity.compact,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-
-                                                          if (_useCustomTimestamp)
-                                                            Padding(
-                                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                              child: TextField(
-                                                                controller: _timestampController,
-                                                                decoration: const InputDecoration(
-                                                                  labelText: 'Timestamp (ms)',
-                                                                  labelStyle: TextStyle(fontSize: 12),
-                                                                  border: OutlineInputBorder(),
-                                                                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                                ),
-                                                                keyboardType: TextInputType.number,
-                                                                style: const TextStyle(fontSize: 12),
-                                                              ),
-                                                            ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-
-                                              const SizedBox(height: 16),
-                                              ElevatedButton.icon(
-                                                onPressed: _seekToTimestamp,
-                                                icon: const Icon(Icons.time_to_leave,
-                                                    size: 16),
-                                                label: const Text('Seek'),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFF64748B),
-                                                  shape: RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius
-                                                              .circular(8)),
+                                                  ],
                                                 ),
                                               ),
-                                            ],
+                                            ),
+
+                                            const SizedBox(width: 16),
+
+                                            Expanded(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(
+                                                      color: const Color(
+                                                          0xFFE2E8F0),
+                                                      width: 2),
+                                                  borderRadius:
+                                                      BorderRadius
+                                                          .circular(8),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment
+                                                          .start,
+                                                  children: [
+                                                    const Padding(
+                                                      padding: EdgeInsets
+                                                              .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 8),
+                                                      child: Text(
+                                                        'Seek to Timestamp',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight
+                                                                  .bold,
+                                                          fontSize: 12,
+                                                          color: Color(
+                                                              0xFF475569),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: CheckboxListTile(
+                                                            value: _useCustomTimestamp,
+                                                            onChanged: (value) {
+                                                              setState(() {
+                                                                _useCustomTimestamp = value!;
+                                                              });
+                                                            },
+                                                            title: const Text('Use custom'),
+                                                            activeColor: const Color(0xFF3B82F6),
+                                                            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                                            dense: true,
+                                                            visualDensity: VisualDensity.compact,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+
+                                                    if (_useCustomTimestamp)
+                                                      Padding(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                        child: TextField(
+                                                          controller: _timestampController,
+                                                          decoration: const InputDecoration(
+                                                            labelText: 'Timestamp (ms)',
+                                                            labelStyle: TextStyle(fontSize: 12),
+                                                            border: OutlineInputBorder(),
+                                                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                          ),
+                                                          keyboardType: TextInputType.number,
+                                                          style: const TextStyle(fontSize: 12),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+
+                                        const SizedBox(height: 16),
+                                        ElevatedButton.icon(
+                                          onPressed: _seekToTimestamp,
+                                          icon: const Icon(Icons.time_to_leave,
+                                              size: 16),
+                                          label: const Text('Seek'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF64748B),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius
+                                                        .circular(8)),
                                           ),
                                         ),
-                                      ),
+                                      ],
+                                    ),
+                                  ),
 
-                                      // 消息列表
-                                      Expanded(
-                                        child: Consumer<ConsumerProvider>(
-                                          builder: (context, provider, child) {
-                                            return ListView.builder(
-                                              itemCount: provider.messages.length,
-                                              itemBuilder: (context, index) {
-                                                final message = provider.messages[index];
-                                                return Container(
-                                                  padding: const EdgeInsets.all(16),
-                                                  decoration: BoxDecoration(
-                                                    border: Border(
-                                                        bottom: BorderSide(
-                                                            color: const Color(
-                                                                0xFFE2E8F0),
-                                                            width: 1)),
-                                                  ),
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
+                                  // 消息列表
+                                  Expanded(
+                                    child: Consumer<ConsumerProvider>(
+                                      builder: (context, provider, child) {
+                                        return ListView.builder(
+                                          itemCount: provider.messages.length,
+                                          itemBuilder: (context, index) {
+                                            final message = provider.messages[index];
+                                            return Container(
+                                              padding: const EdgeInsets.all(16),
+                                              decoration: BoxDecoration(
+                                                border: Border(
+                                                    bottom: BorderSide(
+                                                        color: const Color(
+                                                            0xFFE2E8F0),
+                                                        width: 1)),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment
+                                                        .start,
+                                                children: [
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
                                                     children: [
-                                                      Row(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .spaceBetween,
-                                                        children: [
-                                                          Text(
-                                                            'Offset: ${message.offset}',
-                                                            style: const TextStyle(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              color: Color(
-                                                                  0xFF1E3A8A),
-                                                            ),
-                                                          ),
-                                                          Text(
-                                                            'Partition: ${message.partition}',
-                                                            style: const TextStyle(
-                                                              color: Color(
-                                                                  0xFF64748B),
-                                                            ),
-                                                          ),
-                                                          Text(
-                                                            '${DateTime.fromMillisecondsSinceEpoch(message.timestamp).toString()}',
-                                                            style: const TextStyle(
-                                                              fontSize: 12,
-                                                              color: Color(
-                                                                  0xFF94A3B8),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      const SizedBox(height: 8),
                                                       Text(
-                                                        message.content,
+                                                        'Offset: ${message.offset}',
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight
+                                                                  .bold,
+                                                          color: Color(
+                                                              0xFF1E3A8A),
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        'Partition: ${message.partition}',
                                                         style: const TextStyle(
                                                           color: Color(
-                                                              0xFF334155),
+                                                              0xFF64748B),
                                                         ),
-                                                        overflow: TextOverflow
-                                                            .visible,
-                                                        softWrap: true,
+                                                      ),
+                                                      Text(
+                                                        '${DateTime.fromMillisecondsSinceEpoch(message.timestamp).toString()}',
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Color(
+                                                              0xFF94A3B8),
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
-                                                );
-                                              },
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    message.content,
+                                                    style: const TextStyle(
+                                                      color: Color(
+                                                          0xFF334155),
+                                                    ),
+                                                    overflow: TextOverflow
+                                                        .visible,
+                                                    softWrap: true,
+                                                  ),
+                                                ],
+                                              ),
                                             );
                                           },
-                                        ),
-                                      ),
-                                    ],
+                                        );
+                                      },
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
                           ],
@@ -1253,130 +1240,122 @@ class _TopicsScreenState extends State<TopicsScreen> {
 
                             const SizedBox(height: 24),
                             // 消息消费区域
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minWidth: MediaQuery.of(context).size.width -
-                                      32, // 确保有足够的最小宽度
-                                  minHeight: 500,
-                                ),
-                                child: Card(
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                  child: Column(
-                                    children: [
-                                      // 消费者配置（更窄）
-                                      ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: double.infinity,
-                                        ),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(20),
-                                          decoration: const BoxDecoration(
-                                            border: Border(
-                                                bottom: BorderSide(
-                                                    color: Color(0xFFE2E8F0),
-                                                    width: 2)),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.stretch,
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              child: Column(
+                                children: [
+                                  // 消费者配置（更窄）
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: double.infinity,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: const BoxDecoration(
+                                        border: Border(
+                                            bottom: BorderSide(
+                                                color: Color(0xFFE2E8F0),
+                                                width: 2)),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceBetween,
                                             children: [
                                               Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
                                                 children: [
-                                                  Row(
-                                                    children: [
-                                                      Container(
-                                                        width: 40,
-                                                        height: 40,
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: const Color(
-                                                              0xFFF0FDF4),
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(10),
-                                                        ),
-                                                        child: const Icon(
-                                                          Icons.download,
-                                                          color:
-                                                              Color(0xFF10B981),
-                                                          size: 20,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 12),
-                                                      const Text(
-                                                        'Consume',
-                                                        style: TextStyle(
-                                                          fontSize: 18,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color:
-                                                              Color(0xFF1E3A8A),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  ElevatedButton.icon(
-                                                    onPressed: _toggleConsuming,
-                                                    icon: Icon(
-                                                      kafkaProvider
-                                                              .consumerProvider
-                                                              .isConsuming
-                                                          ? Icons.stop
-                                                          : Icons.play_arrow,
-                                                      color: Colors.white,
+                                                  Container(
+                                                    width: 40,
+                                                    height: 40,
+                                                    decoration:
+                                                        BoxDecoration(
+                                                      color: const Color(
+                                                          0xFFF0FDF4),
+                                                      borderRadius:
+                                                          BorderRadius
+                                                              .circular(10),
+                                                    ),
+                                                    child: const Icon(
+                                                      Icons.download,
+                                                      color:
+                                                          Color(0xFF10B981),
                                                       size: 20,
                                                     ),
-                                                    label: Text(
-                                                      kafkaProvider
-                                                              .consumerProvider
-                                                              .isConsuming
-                                                          ? 'Stop'
-                                                          : 'Start',
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                    style: ElevatedButton
-                                                        .styleFrom(
-                                                      backgroundColor:
-                                                          kafkaProvider
-                                                                  .consumerProvider
-                                                                  .isConsuming
-                                                              ? const Color(
-                                                                  0xFFEF4444)
-                                                              : const Color(
-                                                                  0xFF10B981),
-                                                      shape:
-                                                          RoundedRectangleBorder(
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(8)),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  const Text(
+                                                    'Consume',
+                                                    style: TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          Color(0xFF1E3A8A),
                                                     ),
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 20),
-
-                                              // 消费位置设置
-                                              const Text(
-                                                'Consume Position',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF475569),
+                                              ElevatedButton.icon(
+                                                onPressed: _toggleConsuming,
+                                                icon: Icon(
+                                                  kafkaProvider
+                                                          .consumerProvider
+                                                          .isConsuming
+                                                      ? Icons.stop
+                                                      : Icons.play_arrow,
+                                                  color: Colors.white,
+                                                  size: 20,
+                                                ),
+                                                label: Text(
+                                                  kafkaProvider
+                                                          .consumerProvider
+                                                          .isConsuming
+                                                      ? 'Stop'
+                                                      : 'Start',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                  ),
+                                                ),
+                                                style: ElevatedButton
+                                                    .styleFrom(
+                                                  backgroundColor:
+                                                      kafkaProvider
+                                                              .consumerProvider
+                                                              .isConsuming
+                                                          ? const Color(
+                                                              0xFFEF4444)
+                                                          : const Color(
+                                                              0xFF10B981),
+                                                  shape:
+                                                      RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8)),
                                                 ),
                                               ),
-                                              const SizedBox(height: 12),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 20),
+
+                                          // 消费位置设置
+                                          const Text(
+                                            'Consume Position',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF475569),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
                                               Row(
                                                 children: [
                                                   Radio<String>(
