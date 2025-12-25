@@ -12,8 +12,9 @@ class ConsumerProvider extends ChangeNotifier {
   KafkaClientHandle? _consumer;
   String? _bootstrapServers;
   // 使用固定的消费者组ID，加上当前时间戳，确保每次运行时都使用不同的组ID，便于测试
-  final String _consumerGroupId = 'flutter-kafka-consumer-${DateTime.now().millisecondsSinceEpoch}';
-  
+  final String _consumerGroupId =
+      'flutter-kafka-consumer-${DateTime.now().millisecondsSinceEpoch}';
+
   // 添加一个标志位，确保只创建一个消费者实例
   bool _consumerCreated = false;
 
@@ -28,6 +29,12 @@ class ConsumerProvider extends ChangeNotifier {
   int? get seekTimestamp => _seekTimestamp;
   bool get isConnected => _isConnected;
   KafkaClientHandle? get consumer => _consumer;
+
+  // 清空消息列表
+  void clearMessages() {
+    _messages.clear();
+    notifyListeners();
+  }
 
   // 设置消费位置
   void setConsumePosition({String? autoOffsetReset, int? timestamp}) {
@@ -137,11 +144,13 @@ class ConsumerProvider extends ChangeNotifier {
 
     try {
       final trimmedContent = content.trim();
-      if (trimmedContent.isNotEmpty && (trimmedContent.startsWith('{') || trimmedContent.startsWith('['))) {
+      if (trimmedContent.isNotEmpty &&
+          (trimmedContent.startsWith('{') || trimmedContent.startsWith('['))) {
         try {
           final decodedJson = jsonDecode(trimmedContent);
           isJson = true;
-          formattedContent = jsonEncode(decodedJson, toEncodable: (nonEncodable) {
+          formattedContent =
+              jsonEncode(decodedJson, toEncodable: (nonEncodable) {
             return nonEncodable.toString();
           });
           formattedContent = _formatJsonString(formattedContent);
@@ -151,26 +160,27 @@ class ConsumerProvider extends ChangeNotifier {
         }
       }
     } catch (e, stackTrace) {
-      developer.log('Error processing message content: $e', stackTrace: stackTrace);
+      developer.log('Error processing message content: $e',
+          stackTrace: stackTrace);
       isJson = false;
       formattedContent = content;
     }
 
-    return {
-      'isJson': isJson,
-      'formattedContent': formattedContent
-    };
+    return {'isJson': isJson, 'formattedContent': formattedContent};
   }
 
   Future<void> connect(String bootstrapServers) async {
     try {
-      developer.log('Attempting to connect consumer to Kafka at $bootstrapServers via FFI');
+      developer.log(
+          'Attempting to connect consumer to Kafka at $bootstrapServers via FFI');
       _bootstrapServers = bootstrapServers;
       _isConnected = true;
-      developer.log('Successfully connected consumer to Kafka at $bootstrapServers');
+      developer
+          .log('Successfully connected consumer to Kafka at $bootstrapServers');
       notifyListeners();
     } catch (e, stackTrace) {
-      developer.log('Failed to connect consumer to Kafka: $e', stackTrace: stackTrace);
+      developer.log('Failed to connect consumer to Kafka: $e',
+          stackTrace: stackTrace);
       _isConnected = false;
       _bootstrapServers = null;
       _consumer = null;
@@ -191,7 +201,7 @@ class ConsumerProvider extends ChangeNotifier {
       _isConsuming = true;
       notifyListeners(); // 立即通知UI状态更新
       _consumeTimer?.cancel();
-      
+
       // 2. 创建或重置消费者实例
       if (_consumer != null) {
         developer.log('Closing existing consumer: $_consumer');
@@ -203,13 +213,11 @@ class ConsumerProvider extends ChangeNotifier {
       developer.log('  bootstrapServers: $_bootstrapServers');
       developer.log('  consumerGroupId: $_consumerGroupId');
       developer.log('  autoOffsetReset: $_autoOffsetReset');
-      developer.log('  current timestamp: ${DateTime.now().millisecondsSinceEpoch}');
-      
+      developer
+          .log('  current timestamp: ${DateTime.now().millisecondsSinceEpoch}');
+
       _consumer = KafkaFFI.createConsumerWithConfig(
-        _bootstrapServers!, 
-        _consumerGroupId, 
-        _autoOffsetReset
-      );
+          _bootstrapServers!, _consumerGroupId, _autoOffsetReset);
 
       developer.log('Successfully created consumer with handle: $_consumer');
 
@@ -227,15 +235,17 @@ class ConsumerProvider extends ChangeNotifier {
 
       // 5. 开始轮询消息
       developer.log('Starting message polling timer');
-      _consumeTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      _consumeTimer =
+          Timer.periodic(const Duration(milliseconds: 300), (timer) {
         if (!_isConsuming || _consumer == null) {
           developer.log('Stopping timer because consumer is no longer active');
           timer.cancel();
           return;
         }
-        
+
         try {
-          developer.log('Polling for messages with consumer: $_consumer, timeout: 100ms');
+          developer.log(
+              'Polling for messages with consumer: $_consumer, timeout: 100ms');
           final message = KafkaFFI.consumeMessage(_consumer!, 100);
 
           if (message != null) {
@@ -245,15 +255,17 @@ class ConsumerProvider extends ChangeNotifier {
             final int offset = message['offset'] as int? ?? -1;
             final String content = message['content'] as String? ?? '';
             final dynamic key = message['key'];
-            final int timestamp = message['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
+            final int timestamp = message['timestamp'] as int? ??
+                DateTime.now().millisecondsSinceEpoch;
 
             // 安全处理key，确保它是字符串
             final String safeKey = key != null ? key.toString() : '';
-            
+
             final processedContent = processMessageContent(content);
 
-            developer.log('Processing message: $topic:$partition:$offset, key: $safeKey, content: $content');
-            
+            developer.log(
+                'Processing message: $topic:$partition:$offset, key: $safeKey, content: $content');
+
             // 直接更新消息列表，确保UI立即刷新
             _messages.add({
               'topic': topic,
@@ -265,30 +277,37 @@ class ConsumerProvider extends ChangeNotifier {
               'isJson': processedContent['isJson'],
               'formattedContent': processedContent['formattedContent']
             });
-            developer.log('Added message to list, current message count: ${_messages.length}');
-            notifyListeners(); // 立即通知UI更新
+            developer.log(
+                'Added message to list, current message count: ${_messages.length}');
+            // 确保在UI线程执行notifyListeners()
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              notifyListeners(); // 立即通知UI更新
+            });
           } else {
             developer.log('No message received in this poll');
           }
         } catch (e, stackTrace) {
-          developer.log('Error during message polling: $e', stackTrace: stackTrace);
+          developer.log('Error during message polling: $e',
+              stackTrace: stackTrace);
           // 如果发生错误，取消定时器，避免无限循环报错
           timer.cancel();
           _consumeTimer = null;
           _isConsuming = false;
-          notifyListeners();
+          // 确保在UI线程执行notifyListeners()
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            notifyListeners();
+          });
         }
       });
 
       developer.log('Successfully started message consumption');
       notifyListeners();
-
     } catch (e, stackTrace) {
       developer.log('Failed to consume messages: $e', stackTrace: stackTrace);
       _isConsuming = false;
       _consumeTimer?.cancel();
       _consumeTimer = null;
-      
+
       if (_consumer != null) {
         try {
           KafkaFFI.closeClient(_consumer!);
@@ -297,7 +316,7 @@ class ConsumerProvider extends ChangeNotifier {
         }
         _consumer = null;
       }
-      
+
       notifyListeners();
       throw Exception('Failed to consume messages: $e');
     }
@@ -347,7 +366,8 @@ class ConsumerProvider extends ChangeNotifier {
       developer.log('Successfully disconnected consumer from Kafka');
       notifyListeners();
     } catch (e, stackTrace) {
-      developer.log('Failed to disconnect consumer: $e', stackTrace: stackTrace);
+      developer.log('Failed to disconnect consumer: $e',
+          stackTrace: stackTrace);
 
       try {
         if (_consumer != null) {

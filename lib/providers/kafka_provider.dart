@@ -14,6 +14,8 @@ class KafkaConnection {
     required this.bootstrapServers,
   });
 
+  String get servers => bootstrapServers;
+
   Map<String, dynamic> toMap() {
     return {
       'name': name,
