@@ -8,7 +8,8 @@ final DynamicLibrary kafkaLib = _loadKafkaLibrary();
 DynamicLibrary _loadKafkaLibrary() {
   try {
     final library = Platform.isMacOS
-        ? DynamicLibrary.open('/Users/lailai/workspace/flutter_workspace/flutter-kafka/macos/kafka_client/libkafka_client.dylib')
+        ? DynamicLibrary.open(
+            '/Users/lailai/workspace/flutter_workspace/flutter-kafka/macos/kafka_client/libkafka_client.dylib')
         : DynamicLibrary.open('librdkafka.so'); // Linux支持
     print('✅ Successfully loaded Kafka dynamic library');
     return library;
@@ -28,6 +29,45 @@ typedef KafkaMessageHandle = Pointer<Void>;
 // 错误码
 typedef KafkaErrorCode = Int32;
 
+// 主题分区结构体
+base class KafkaPartitionInfoStruct extends Struct {
+  @Int32()
+  external int id;
+
+  @Int32()
+  external int leader;
+
+  external Pointer<Utf8> replicas;
+
+  external Pointer<Utf8> isr;
+
+  @Int64()
+  external int latest_offset;
+
+  @Int64()
+  external int earliest_offset;
+}
+
+// 主题配置参数结构体
+base class KafkaConfigParamStruct extends Struct {
+  external Pointer<Utf8> key;
+
+  external Pointer<Utf8> value;
+}
+
+// 消费者组结构体
+base class KafkaConsumerGroupStruct extends Struct {
+  external Pointer<Utf8> name;
+
+  @Int32()
+  external int members;
+
+  @Int64()
+  external int lag;
+
+  external Pointer<Utf8> status;
+}
+
 // 创建Kafka生产者
 typedef CreateKafkaProducerFunc = KafkaClientHandle Function(
     Pointer<Utf8> bootstrapServers);
@@ -42,9 +82,13 @@ typedef CreateKafkaConsumer = KafkaClientHandle Function(
 
 // 创建带消费位置配置的Kafka消费者
 typedef CreateKafkaConsumerWithConfigFunc = KafkaClientHandle Function(
-    Pointer<Utf8> bootstrapServers, Pointer<Utf8> groupId, Pointer<Utf8> autoOffsetReset);
+    Pointer<Utf8> bootstrapServers,
+    Pointer<Utf8> groupId,
+    Pointer<Utf8> autoOffsetReset);
 typedef CreateKafkaConsumerWithConfig = KafkaClientHandle Function(
-    Pointer<Utf8> bootstrapServers, Pointer<Utf8> groupId, Pointer<Utf8> autoOffsetReset);
+    Pointer<Utf8> bootstrapServers,
+    Pointer<Utf8> groupId,
+    Pointer<Utf8> autoOffsetReset);
 
 // 重置消费者偏移量到特定时间戳
 typedef SeekToTimestampFunc = KafkaErrorCode Function(
@@ -63,10 +107,10 @@ typedef GetKafkaTopics = Pointer<Pointer<Utf8>> Function(
     KafkaClientHandle client, Pointer<Int32> topicCount);
 
 // 释放主题列表
-typedef FreeKafkaTopicsFunc = Void Function(Pointer<Pointer<Utf8>> topics,
-    Int32 topicCount);
-typedef FreeKafkaTopics = void Function(Pointer<Pointer<Utf8>> topics,
-    int topicCount);
+typedef FreeKafkaTopicsFunc = Void Function(
+    Pointer<Pointer<Utf8>> topics, Int32 topicCount);
+typedef FreeKafkaTopics = void Function(
+    Pointer<Pointer<Utf8>> topics, int topicCount);
 
 // 发送消息
 typedef SendKafkaMessageFunc = KafkaErrorCode Function(
@@ -103,15 +147,18 @@ typedef GetKafkaMessageOffsetFunc = Int64 Function(KafkaMessageHandle message);
 typedef GetKafkaMessageOffset = int Function(KafkaMessageHandle message);
 
 // 获取消息分区
-typedef GetKafkaMessagePartitionFunc = Int32 Function(KafkaMessageHandle message);
+typedef GetKafkaMessagePartitionFunc = Int32 Function(
+    KafkaMessageHandle message);
 typedef GetKafkaMessagePartition = int Function(KafkaMessageHandle message);
 
 // 获取消息key
-typedef GetKafkaMessageKeyFunc = Pointer<Utf8> Function(KafkaMessageHandle message);
+typedef GetKafkaMessageKeyFunc = Pointer<Utf8> Function(
+    KafkaMessageHandle message);
 typedef GetKafkaMessageKey = Pointer<Utf8> Function(KafkaMessageHandle message);
 
 // 获取消息时间戳
-typedef GetKafkaMessageTimestampFunc = Int64 Function(KafkaMessageHandle message);
+typedef GetKafkaMessageTimestampFunc = Int64 Function(
+    KafkaMessageHandle message);
 typedef GetKafkaMessageTimestamp = int Function(KafkaMessageHandle message);
 
 // 释放消息
@@ -122,78 +169,167 @@ typedef FreeKafkaMessage = void Function(KafkaMessageHandle message);
 typedef GetKafkaErrorMsgFunc = Pointer<Utf8> Function(KafkaErrorCode errorCode);
 typedef GetKafkaErrorMsg = Pointer<Utf8> Function(int errorCode);
 
+// 获取主题的基本信息
+typedef GetKafkaTopicInfoFunc = KafkaErrorCode Function(
+    KafkaClientHandle client,
+    Pointer<Utf8> topicName,
+    Pointer<Int32> partitionCount,
+    Pointer<Int32> replicationFactor);
+typedef GetKafkaTopicInfo = int Function(
+    KafkaClientHandle client,
+    Pointer<Utf8> topicName,
+    Pointer<Int32> partitionCount,
+    Pointer<Int32> replicationFactor);
+
+// 获取主题分区详情
+typedef GetKafkaTopicPartitionsFunc
+    = Pointer<KafkaPartitionInfoStruct> Function(KafkaClientHandle client,
+        Pointer<Utf8> topicName, Pointer<Int32> partitionCount);
+typedef GetKafkaTopicPartitions = Pointer<KafkaPartitionInfoStruct> Function(
+    KafkaClientHandle client,
+    Pointer<Utf8> topicName,
+    Pointer<Int32> partitionCount);
+
+// 释放主题分区详情
+typedef FreeKafkaTopicPartitionsFunc = Void Function(
+    Pointer<KafkaPartitionInfoStruct> partitions, Int32 partitionCount);
+typedef FreeKafkaTopicPartitions = void Function(
+    Pointer<KafkaPartitionInfoStruct> partitions, int partitionCount);
+
+// 获取主题配置参数
+typedef GetKafkaTopicConfigFunc = Pointer<KafkaConfigParamStruct> Function(
+    KafkaClientHandle client,
+    Pointer<Utf8> topicName,
+    Pointer<Int32> paramCount);
+typedef GetKafkaTopicConfig = Pointer<KafkaConfigParamStruct> Function(
+    KafkaClientHandle client,
+    Pointer<Utf8> topicName,
+    Pointer<Int32> paramCount);
+
+// 释放主题配置参数
+typedef FreeKafkaTopicConfigFunc = Void Function(
+    Pointer<KafkaConfigParamStruct> params, Int32 paramCount);
+typedef FreeKafkaTopicConfig = void Function(
+    Pointer<KafkaConfigParamStruct> params, int paramCount);
+
+// 获取主题的消费者组
+typedef GetKafkaTopicConsumerGroupsFunc
+    = Pointer<KafkaConsumerGroupStruct> Function(KafkaClientHandle client,
+        Pointer<Utf8> topicName, Pointer<Int32> groupCount);
+typedef GetKafkaTopicConsumerGroups
+    = Pointer<KafkaConsumerGroupStruct> Function(KafkaClientHandle client,
+        Pointer<Utf8> topicName, Pointer<Int32> groupCount);
+
+// 释放消费者组
+typedef FreeKafkaTopicConsumerGroupsFunc = Void Function(
+    Pointer<KafkaConsumerGroupStruct> groups, Int32 groupCount);
+typedef FreeKafkaTopicConsumerGroups = void Function(
+    Pointer<KafkaConsumerGroupStruct> groups, int groupCount);
+
 // 绑定函数
-final CreateKafkaProducer _createKafkaProducer = kafkaLib
-    .lookupFunction<CreateKafkaProducerFunc, CreateKafkaProducer>(
+final CreateKafkaProducer _createKafkaProducer =
+    kafkaLib.lookupFunction<CreateKafkaProducerFunc, CreateKafkaProducer>(
         'create_kafka_producer');
 
-final CreateKafkaConsumer _createKafkaConsumer = kafkaLib
-    .lookupFunction<CreateKafkaConsumerFunc, CreateKafkaConsumer>(
+final CreateKafkaConsumer _createKafkaConsumer =
+    kafkaLib.lookupFunction<CreateKafkaConsumerFunc, CreateKafkaConsumer>(
         'create_kafka_consumer');
 
-final CreateKafkaConsumerWithConfig _createKafkaConsumerWithConfig = kafkaLib
-    .lookupFunction<CreateKafkaConsumerWithConfigFunc, CreateKafkaConsumerWithConfig>(
-        'create_kafka_consumer_with_config');
+final CreateKafkaConsumerWithConfig _createKafkaConsumerWithConfig =
+    kafkaLib.lookupFunction<CreateKafkaConsumerWithConfigFunc,
+        CreateKafkaConsumerWithConfig>('create_kafka_consumer_with_config');
 
 final SeekToTimestamp _seekToTimestamp = kafkaLib
-    .lookupFunction<SeekToTimestampFunc, SeekToTimestamp>(
-        'seek_to_timestamp');
+    .lookupFunction<SeekToTimestampFunc, SeekToTimestamp>('seek_to_timestamp');
 
-final CloseKafkaClient closeKafkaClient = kafkaLib
-    .lookupFunction<CloseKafkaClientFunc, CloseKafkaClient>(
+final CloseKafkaClient closeKafkaClient =
+    kafkaLib.lookupFunction<CloseKafkaClientFunc, CloseKafkaClient>(
         'close_kafka_client');
 
 final GetKafkaTopics getKafkaTopics = kafkaLib
-    .lookupFunction<GetKafkaTopicsFunc, GetKafkaTopics>(
-        'get_kafka_topics');
+    .lookupFunction<GetKafkaTopicsFunc, GetKafkaTopics>('get_kafka_topics');
 
 final FreeKafkaTopics freeKafkaTopics = kafkaLib
-    .lookupFunction<FreeKafkaTopicsFunc, FreeKafkaTopics>(
-        'free_kafka_topics');
+    .lookupFunction<FreeKafkaTopicsFunc, FreeKafkaTopics>('free_kafka_topics');
 
-final SendKafkaMessage sendKafkaMessage = kafkaLib
-    .lookupFunction<SendKafkaMessageFunc, SendKafkaMessage>(
+final SendKafkaMessage sendKafkaMessage =
+    kafkaLib.lookupFunction<SendKafkaMessageFunc, SendKafkaMessage>(
         'send_kafka_message');
 
-final SubscribeKafkaTopic subscribeKafkaTopic = kafkaLib
-    .lookupFunction<SubscribeKafkaTopicFunc, SubscribeKafkaTopic>(
+final SubscribeKafkaTopic subscribeKafkaTopic =
+    kafkaLib.lookupFunction<SubscribeKafkaTopicFunc, SubscribeKafkaTopic>(
         'subscribe_kafka_topic');
 
-final ConsumeKafkaMessage consumeKafkaMessage = kafkaLib
-    .lookupFunction<ConsumeKafkaMessageFunc, ConsumeKafkaMessage>(
+final ConsumeKafkaMessage consumeKafkaMessage =
+    kafkaLib.lookupFunction<ConsumeKafkaMessageFunc, ConsumeKafkaMessage>(
         'consume_kafka_message');
 
-final GetKafkaMessageContent getKafkaMessageContent = kafkaLib
-    .lookupFunction<GetKafkaMessageContentFunc, GetKafkaMessageContent>(
+final GetKafkaMessageContent getKafkaMessageContent =
+    kafkaLib.lookupFunction<GetKafkaMessageContentFunc, GetKafkaMessageContent>(
         'get_kafka_message_content');
 
-final GetKafkaMessageTopic getKafkaMessageTopic = kafkaLib
-    .lookupFunction<GetKafkaMessageTopicFunc, GetKafkaMessageTopic>(
+final GetKafkaMessageTopic getKafkaMessageTopic =
+    kafkaLib.lookupFunction<GetKafkaMessageTopicFunc, GetKafkaMessageTopic>(
         'get_kafka_message_topic');
 
-final GetKafkaMessageOffset getKafkaMessageOffset = kafkaLib
-    .lookupFunction<GetKafkaMessageOffsetFunc, GetKafkaMessageOffset>(
+final GetKafkaMessageOffset getKafkaMessageOffset =
+    kafkaLib.lookupFunction<GetKafkaMessageOffsetFunc, GetKafkaMessageOffset>(
         'get_kafka_message_offset');
 
 final GetKafkaMessagePartition getKafkaMessagePartition = kafkaLib
     .lookupFunction<GetKafkaMessagePartitionFunc, GetKafkaMessagePartition>(
         'get_kafka_message_partition');
 
-final GetKafkaMessageKey getKafkaMessageKey = kafkaLib
-    .lookupFunction<GetKafkaMessageKeyFunc, GetKafkaMessageKey>(
+final GetKafkaMessageKey getKafkaMessageKey =
+    kafkaLib.lookupFunction<GetKafkaMessageKeyFunc, GetKafkaMessageKey>(
         'get_kafka_message_key');
 
 final GetKafkaMessageTimestamp getKafkaMessageTimestamp = kafkaLib
     .lookupFunction<GetKafkaMessageTimestampFunc, GetKafkaMessageTimestamp>(
         'get_kafka_message_timestamp');
 
-final FreeKafkaMessage freeKafkaMessage = kafkaLib
-    .lookupFunction<FreeKafkaMessageFunc, FreeKafkaMessage>(
+final FreeKafkaMessage freeKafkaMessage =
+    kafkaLib.lookupFunction<FreeKafkaMessageFunc, FreeKafkaMessage>(
         'free_kafka_message');
 
-final GetKafkaErrorMsg getKafkaErrorMsg = kafkaLib
-    .lookupFunction<GetKafkaErrorMsgFunc, GetKafkaErrorMsg>(
+final GetKafkaErrorMsg getKafkaErrorMsg =
+    kafkaLib.lookupFunction<GetKafkaErrorMsgFunc, GetKafkaErrorMsg>(
         'get_kafka_error_msg');
+
+// 获取主题基本信息
+final GetKafkaTopicInfo getKafkaTopicInfo =
+    kafkaLib.lookupFunction<GetKafkaTopicInfoFunc, GetKafkaTopicInfo>(
+        'get_kafka_topic_info');
+
+// 获取主题分区详情
+final GetKafkaTopicPartitions getKafkaTopicPartitions = kafkaLib.lookupFunction<
+    GetKafkaTopicPartitionsFunc,
+    GetKafkaTopicPartitions>('get_kafka_topic_partitions');
+
+// 释放主题分区详情
+final FreeKafkaTopicPartitions freeKafkaTopicPartitions = kafkaLib
+    .lookupFunction<FreeKafkaTopicPartitionsFunc, FreeKafkaTopicPartitions>(
+        'free_kafka_topic_partitions');
+
+// 获取主题配置参数
+final GetKafkaTopicConfig getKafkaTopicConfig =
+    kafkaLib.lookupFunction<GetKafkaTopicConfigFunc, GetKafkaTopicConfig>(
+        'get_kafka_topic_config');
+
+// 释放主题配置参数
+final FreeKafkaTopicConfig freeKafkaTopicConfig =
+    kafkaLib.lookupFunction<FreeKafkaTopicConfigFunc, FreeKafkaTopicConfig>(
+        'free_kafka_topic_config');
+
+// 获取主题的消费者组
+final GetKafkaTopicConsumerGroups getKafkaTopicConsumerGroups =
+    kafkaLib.lookupFunction<GetKafkaTopicConsumerGroupsFunc,
+        GetKafkaTopicConsumerGroups>('get_kafka_topic_consumer_groups');
+
+// 释放消费者组
+final FreeKafkaTopicConsumerGroups freeKafkaTopicConsumerGroups =
+    kafkaLib.lookupFunction<FreeKafkaTopicConsumerGroupsFunc,
+        FreeKafkaTopicConsumerGroups>('free_kafka_topic_consumer_groups');
 
 // 高级封装类
 class KafkaFFI {
@@ -202,7 +338,8 @@ class KafkaFFI {
 
   // 创建生产者
   static KafkaClientHandle createProducer(String bootstrapServers) {
-    print('🔧 KafkaFFI: Creating producer with bootstrap servers: $bootstrapServers');
+    print(
+        '🔧 KafkaFFI: Creating producer with bootstrap servers: $bootstrapServers');
     final bootstrapServersPtr = bootstrapServers.toNativeUtf8();
     print('🔧 KafkaFFI: Calling FFI function create_kafka_producer');
     final producer = _createKafkaProducer(bootstrapServersPtr);
@@ -286,18 +423,24 @@ class KafkaFFI {
     print('🔧 KafkaFFI: Topic count returned: $topicCount');
     final topics = <String>[];
 
-    for (int i = 0; i < topicCount; i++) {
-      final topicPtr = (topicsPtr + i).value;
-      print('🔧 KafkaFFI: Topic $i pointer: $topicPtr');
-      if (topicPtr != nullptr) {
-        final topicName = topicPtr.toDartString();
-        print('🔧 KafkaFFI: Topic $i name: $topicName');
-        topics.add(topicName);
+    // 检查topicsPtr是否为空
+    if (topicsPtr != nullptr) {
+      for (int i = 0; i < topicCount; i++) {
+        final topicPtr = (topicsPtr + i).value;
+        print('🔧 KafkaFFI: Topic $i pointer: $topicPtr');
+        if (topicPtr != nullptr) {
+          final topicName = topicPtr.toDartString();
+          print('🔧 KafkaFFI: Topic $i name: $topicName');
+          topics.add(topicName);
+        }
       }
+
+      print('🔧 KafkaFFI: Calling FFI function free_kafka_topics');
+      freeKafkaTopics(topicsPtr, topicCount);
+    } else {
+      print('⚠️ KafkaFFI: FFI function returned null topics pointer');
     }
 
-    print('🔧 KafkaFFI: Calling FFI function free_kafka_topics');
-    freeKafkaTopics(topicsPtr, topicCount);
     calloc.free(topicCountPtr);
     print('✅ KafkaFFI: Successfully got $topicCount topics: $topics');
     return topics;
@@ -320,8 +463,7 @@ class KafkaFFI {
   }
 
   // 订阅主题
-  static void subscribeTopic(
-      KafkaClientHandle consumer, String topic) {
+  static void subscribeTopic(KafkaClientHandle consumer, String topic) {
     final topicPtr = topic.toNativeUtf8();
     final errorCode = subscribeKafkaTopic(consumer, topicPtr);
     calloc.free(topicPtr);
@@ -376,6 +518,136 @@ class KafkaFFI {
     }
     if (_consumer != null) {
       closeClient(_consumer!);
+    }
+  }
+
+  // 获取主题基本信息
+  static Map<String, int> getTopicInfo(
+      KafkaClientHandle client, String topicName) {
+    final topicNamePtr = topicName.toNativeUtf8();
+    final partitionCountPtr = calloc<Int32>();
+    final replicationFactorPtr = calloc<Int32>();
+
+    try {
+      final errorCode = getKafkaTopicInfo(
+          client, topicNamePtr, partitionCountPtr, replicationFactorPtr);
+
+      if (errorCode != 0) {
+        final errorMsgPtr = getKafkaErrorMsg(errorCode);
+        final errorMsg = errorMsgPtr.toDartString();
+        throw Exception('Failed to get topic info: $errorMsg');
+      }
+
+      return {
+        'partitionCount': partitionCountPtr.value,
+        'replicationFactor': replicationFactorPtr.value,
+      };
+    } finally {
+      calloc.free(topicNamePtr);
+      calloc.free(partitionCountPtr);
+      calloc.free(replicationFactorPtr);
+    }
+  }
+
+  // 获取主题分区详情
+  static List<Map<String, dynamic>> getTopicPartitions(
+      KafkaClientHandle client, String topicName) {
+    final topicNamePtr = topicName.toNativeUtf8();
+    final partitionCountPtr = calloc<Int32>();
+
+    try {
+      final partitionsPtr =
+          getKafkaTopicPartitions(client, topicNamePtr, partitionCountPtr);
+
+      if (partitionsPtr == nullptr) {
+        return [];
+      }
+
+      final partitionCount = partitionCountPtr.value;
+      final partitions = <Map<String, dynamic>>[];
+
+      for (int i = 0; i < partitionCount; i++) {
+        final partition = partitionsPtr.elementAt(i).ref;
+        partitions.add({
+          'id': partition.id,
+          'leader': partition.leader,
+          'replicas': partition.replicas.toDartString(),
+          'isr': partition.isr.toDartString(),
+          'latestOffset': partition.latest_offset,
+          'earliestOffset': partition.earliest_offset,
+        });
+      }
+
+      freeKafkaTopicPartitions(partitionsPtr, partitionCount);
+      return partitions;
+    } finally {
+      calloc.free(topicNamePtr);
+      calloc.free(partitionCountPtr);
+    }
+  }
+
+  // 获取主题配置参数
+  static Map<String, String> getTopicConfig(
+      KafkaClientHandle client, String topicName) {
+    final topicNamePtr = topicName.toNativeUtf8();
+    final paramCountPtr = calloc<Int32>();
+
+    try {
+      final paramsPtr =
+          getKafkaTopicConfig(client, topicNamePtr, paramCountPtr);
+
+      if (paramsPtr == nullptr) {
+        return {};
+      }
+
+      final paramCount = paramCountPtr.value;
+      final config = <String, String>{};
+
+      for (int i = 0; i < paramCount; i++) {
+        final param = paramsPtr.elementAt(i).ref;
+        config[param.key.toDartString()] = param.value.toDartString();
+      }
+
+      freeKafkaTopicConfig(paramsPtr, paramCount);
+      return config;
+    } finally {
+      calloc.free(topicNamePtr);
+      calloc.free(paramCountPtr);
+    }
+  }
+
+  // 获取主题消费者组
+  static List<Map<String, dynamic>> getTopicConsumerGroups(
+      KafkaClientHandle client, String topicName) {
+    final topicNamePtr = topicName.toNativeUtf8();
+    final groupCountPtr = calloc<Int32>();
+
+    try {
+      final groupsPtr =
+          getKafkaTopicConsumerGroups(client, topicNamePtr, groupCountPtr);
+
+      if (groupsPtr == nullptr) {
+        return [];
+      }
+
+      final groupCount = groupCountPtr.value;
+      final consumerGroups = <Map<String, dynamic>>[];
+
+      for (int i = 0; i < groupCount; i++) {
+        final group = groupsPtr.elementAt(i).ref;
+        consumerGroups.add({
+          'name': group.name.toDartString(),
+          'members': group.members,
+          'lag': group.lag,
+          'status': group.status.toDartString(),
+        });
+      }
+
+      freeKafkaTopicConsumerGroups(groupsPtr, groupCount);
+      return consumerGroups;
+    } finally {
+      calloc.free(topicNamePtr);
+      calloc.free(groupCountPtr);
     }
   }
 }

@@ -219,6 +219,10 @@ class ConsumerProvider extends ChangeNotifier {
       _consumer = KafkaFFI.createConsumerWithConfig(
           _bootstrapServers!, _consumerGroupId, _autoOffsetReset);
 
+      if (_consumer == null) {
+        throw Exception('Failed to create consumer: returned null handle');
+      }
+
       developer.log('Successfully created consumer with handle: $_consumer');
 
       // 3. 订阅主题

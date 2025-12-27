@@ -14,11 +14,12 @@ class ConnectionScreen extends StatefulWidget {
 class _ConnectionScreenState extends State<ConnectionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController(text: 'Local Kafka');
-  final _bootstrapServersController = TextEditingController(text: 'localhost:9092');
+  final _bootstrapServersController =
+      TextEditingController(text: 'localhost:9092');
   bool _isConnecting = false;
   bool _isTesting = false;
   bool _showSaveOptions = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -114,13 +115,15 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                         const SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                            border: Border.all(
+                                color: const Color(0xFFE2E8F0), width: 2),
                             borderRadius: BorderRadius.circular(10),
                             color: const Color(0xFFFAFAFA),
                           ),
                           child: DropdownButtonFormField<String>(
                             decoration: const InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 14),
                               border: InputBorder.none,
                               filled: true,
                               fillColor: Colors.transparent,
@@ -134,38 +137,55 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                   style: TextStyle(color: Color(0xFF64748B)),
                                 ),
                               ),
-                              ...kafkaProvider.savedConnections.map((connection) {
+                              ...kafkaProvider.savedConnections
+                                  .map((connection) {
                                 return DropdownMenuItem(
                                   value: connection.name,
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.fiber_manual_record, size: 12, color: Color(0xFF22C55E)),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        connection.name,
-                                        style: const TextStyle(color: Color(0xFF1E293B)),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          connection.bootstrapServers,
-                                          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                                          overflow: TextOverflow.ellipsis,
+                                  child: ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 300),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.fiber_manual_record,
+                                            size: 12, color: Color(0xFF22C55E)),
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: Text(
+                                            connection.name,
+                                            style: const TextStyle(
+                                                color: Color(0xFF1E293B)),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: Text(
+                                            connection.bootstrapServers,
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF64748B)),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 );
                               }),
                             ],
                             onChanged: (value) {
                               if (value != null) {
-                                final connection = kafkaProvider.savedConnections.firstWhere(
+                                final connection =
+                                    kafkaProvider.savedConnections.firstWhere(
                                   (c) => c.name == value,
                                 );
                                 setState(() {
                                   _nameController.text = connection.name;
-                                  _bootstrapServersController.text = connection.bootstrapServers;
+                                  _bootstrapServersController.text =
+                                      connection.bootstrapServers;
                                 });
                               }
                             },
@@ -192,7 +212,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                         const SizedBox(height: 8),
                         Container(
                           decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                            border: Border.all(
+                                color: const Color(0xFFE2E8F0), width: 2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: TextFormField(
@@ -200,7 +221,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                             decoration: const InputDecoration(
                               hintText: 'My Kafka Cluster',
                               hintStyle: TextStyle(color: Color(0xFF94A3B8)),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 14),
                               border: InputBorder.none,
                               filled: true,
                               fillColor: Colors.white,
@@ -233,7 +255,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                       const SizedBox(height: 8),
                       Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                          border: Border.all(
+                              color: const Color(0xFFE2E8F0), width: 2),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: TextFormField(
@@ -241,11 +264,13 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                           decoration: const InputDecoration(
                             hintText: 'localhost:9092',
                             hintStyle: TextStyle(color: Color(0xFF94A3B8)),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
                             border: InputBorder.none,
                             filled: true,
                             fillColor: Colors.white,
-                            prefixIcon: Icon(Icons.settings_ethernet, color: Color(0xFF64748B)),
+                            prefixIcon: Icon(Icons.settings_ethernet,
+                                color: Color(0xFF64748B)),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -272,14 +297,16 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                 _showSaveOptions = value ?? false;
                               });
                             },
-                            fillColor: WidgetStateProperty.resolveWith((states) {
+                            fillColor:
+                                WidgetStateProperty.resolveWith((states) {
                               if (states.contains(WidgetState.selected)) {
                                 return const Color(0xFF2563EB);
                               }
                               return Colors.white;
                             }),
                             checkColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4)),
                             side: const BorderSide(color: Color(0xFFCBD5E1)),
                           ),
                           const Text(
@@ -298,7 +325,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                           },
                           style: TextButton.styleFrom(
                             foregroundColor: const Color(0xFF2563EB),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                           ),
                           child: const Text('Manage Connections'),
                         ),
@@ -315,7 +343,9 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                         child: SizedBox(
                           height: 50,
                           child: ElevatedButton.icon(
-                            onPressed: (_isConnecting || _isTesting) ? null : _testConnection,
+                            onPressed: (_isConnecting || _isTesting)
+                                ? null
+                                : _testConnection,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF10B981),
                               foregroundColor: Colors.white,
@@ -323,18 +353,21 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
                             ),
                             icon: _isTesting
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
-                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2),
                                   )
                                 : const Icon(Icons.question_mark, size: 20),
                             label: Text(
                               _isTesting ? 'Testing...' : 'Test Connection',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -344,7 +377,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                         child: SizedBox(
                           height: 50,
                           child: ElevatedButton(
-                            onPressed: (_isConnecting || _isTesting) ? null : _connect,
+                            onPressed:
+                                (_isConnecting || _isTesting) ? null : _connect,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF2563EB),
                               foregroundColor: Colors.white,
@@ -357,11 +391,14 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                                 ? const SizedBox(
                                     width: 24,
                                     height: 24,
-                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2),
                                   )
                                 : const Text(
                                     'Connect',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
                                   ),
                           ),
                         ),
@@ -378,14 +415,15 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   Future<void> _connect() async {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState != null && _formKey.currentState!.validate()) {
       setState(() {
         _isConnecting = true;
       });
 
       try {
-        final kafkaProvider = Provider.of<KafkaProvider>(context, listen: false);
-        
+        final kafkaProvider =
+            Provider.of<KafkaProvider>(context, listen: false);
+
         // 如果需要保存连接
         if (_showSaveOptions) {
           final connection = KafkaConnection(
@@ -394,7 +432,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
           );
           await kafkaProvider.saveConnection(connection);
         }
-        
+
         // 连接到Kafka
         await kafkaProvider.connect(
           _bootstrapServersController.text,
@@ -415,14 +453,16 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
   }
 
   Future<void> _testConnection() async {
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState != null && _formKey.currentState!.validate()) {
       setState(() {
         _isTesting = true;
       });
 
       try {
-        final kafkaProvider = Provider.of<KafkaProvider>(context, listen: false);
-        final isConnected = await kafkaProvider.testConnection(_bootstrapServersController.text);
+        final kafkaProvider =
+            Provider.of<KafkaProvider>(context, listen: false);
+        final isConnected = await kafkaProvider
+            .testConnection(_bootstrapServersController.text);
 
         setState(() {
           _isTesting = false;
@@ -433,7 +473,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
         if (isConnected) {
           _showSuccessDialog('Connection test successful!');
         } else {
-          _showErrorDialog('Connection test failed. Please check your configuration.');
+          _showErrorDialog(
+              'Connection test failed. Please check your configuration.');
         }
       } catch (e) {
         setState(() {
@@ -467,7 +508,7 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
 
   void _showSavedConnectionsDialog(BuildContext context) {
     final kafkaProvider = Provider.of<KafkaProvider>(context, listen: false);
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -483,7 +524,8 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                 title: Text(connection.name),
                 subtitle: Text(connection.bootstrapServers),
                 onTap: () {
-                  _bootstrapServersController.text = connection.bootstrapServers;
+                  _bootstrapServersController.text =
+                      connection.bootstrapServers;
                   _nameController.text = connection.name;
                   Navigator.pop(dialogContext);
                 },
@@ -493,14 +535,15 @@ class _ConnectionScreenState extends State<ConnectionScreen> {
                     // Capture contexts before async operation
                     final currentDialogContext = dialogContext;
                     final parentContext = context;
-                    
+
                     await kafkaProvider.deleteConnection(connection.name);
-                    
+
                     if (currentDialogContext.mounted) {
                       Navigator.pop(currentDialogContext);
                     }
-                    
-                    if (kafkaProvider.savedConnections.isNotEmpty && parentContext.mounted) {
+
+                    if (kafkaProvider.savedConnections.isNotEmpty &&
+                        parentContext.mounted) {
                       _showSavedConnectionsDialog(parentContext);
                     }
                   },

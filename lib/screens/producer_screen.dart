@@ -31,7 +31,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // 从路由参数中获取初始topic，这个方法在initState之后调用，且widget已完全挂载
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     if (args != null && args.containsKey('topic')) {
       _selectedTopic = args['topic'] as String;
     }
@@ -61,7 +62,7 @@ class _ProducerScreenState extends State<ProducerScreen> {
             const SizedBox(width: 12),
             Text(
               kafkaProvider.currentConnection != null
-                  ? 'Kafka Producer - ${kafkaProvider.currentConnection!.name}'
+                  ? 'Kafka Producer - ${kafkaProvider.currentConnection?.name ?? 'Unknown'}'
                   : 'Kafka Producer',
               style: const TextStyle(
                 color: Colors.white,
@@ -146,7 +147,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
               padding: const EdgeInsets.all(0),
               decoration: const BoxDecoration(
                 color: Color(0xFFF1F5F9),
-                border: Border(right: BorderSide(color: Color(0xFFE2E8F0), width: 2)),
+                border: Border(
+                    right: BorderSide(color: Color(0xFFE2E8F0), width: 2)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.max,
@@ -157,7 +159,9 @@ class _ProducerScreenState extends State<ProducerScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: const BoxDecoration(
                       color: Colors.white,
-                      border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 2)),
+                      border: Border(
+                          bottom:
+                              BorderSide(color: Color(0xFFE2E8F0), width: 2)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -171,7 +175,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFF3B82F6),
                             borderRadius: BorderRadius.circular(12),
@@ -194,14 +199,19 @@ class _ProducerScreenState extends State<ProducerScreen> {
                       itemBuilder: (context, index) {
                         final topic = kafkaProvider.topics[index];
                         final isSelected = _selectedTopic == topic;
-                        
+
                         return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+                            color: isSelected
+                                ? const Color(0xFFEFF6FF)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
+                              color: isSelected
+                                  ? const Color(0xFF3B82F6)
+                                  : Colors.transparent,
                               width: 2,
                             ),
                             boxShadow: [
@@ -224,19 +234,23 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                 });
                               },
                               child: Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 14, 16, 14),
                                 child: Row(
                                   children: [
                                     Container(
                                       width: 14,
                                       height: 14,
                                       decoration: BoxDecoration(
-                                        color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFCBD5E1),
+                                        color: isSelected
+                                            ? const Color(0xFF3B82F6)
+                                            : const Color(0xFFCBD5E1),
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           if (isSelected)
                                             BoxShadow(
-                                              color: const Color(0xFF3B82F6).withOpacity(0.4),
+                                              color: const Color(0xFF3B82F6)
+                                                  .withOpacity(0.4),
                                               spreadRadius: 2,
                                               blurRadius: 8,
                                             ),
@@ -248,22 +262,31 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                       child: Text(
                                         topic,
                                         style: TextStyle(
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                          color: isSelected ? const Color(0xFF1E3A8A) : const Color(0xFF334155),
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
+                                          color: isSelected
+                                              ? const Color(0xFF1E3A8A)
+                                              : const Color(0xFF334155),
                                           fontSize: 16,
                                         ),
                                       ),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
+                                        color: isSelected
+                                            ? const Color(0xFF3B82F6)
+                                            : const Color(0xFFE2E8F0),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Icon(
                                         Icons.arrow_right_alt,
                                         size: 16,
-                                        color: isSelected ? Colors.white : const Color(0xFF64748B),
+                                        color: isSelected
+                                            ? Colors.white
+                                            : const Color(0xFF64748B),
                                       ),
                                     ),
                                   ],
@@ -336,7 +359,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                            border: Border.all(
+                                color: const Color(0xFFE2E8F0), width: 2),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
@@ -364,7 +388,7 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                   Row(
                                     children: [
                                       Text(
-                                        _selectedTopic!,
+                                        _selectedTopic ?? '',
                                         style: const TextStyle(
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
@@ -381,7 +405,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFECFDF5),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: const Color(0xFFA7F3D0), width: 2),
+                                  border: Border.all(
+                                      color: const Color(0xFFA7F3D0), width: 2),
                                 ),
                                 child: Row(
                                   children: [
@@ -416,7 +441,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                            border: Border.all(
+                                color: const Color(0xFFE2E8F0), width: 2),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.05),
@@ -439,7 +465,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                         height: 40,
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFEFF6FF),
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                         child: const Icon(
                                           Icons.send,
@@ -473,11 +500,13 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                               setState(() {
                                                 _isBatchMode = value;
                                                 if (value) {
-                                                  _isJsonFormat = false; // 批量模式下暂时不支持JSON
+                                                  _isJsonFormat =
+                                                      false; // 批量模式下暂时不支持JSON
                                                 }
                                               });
                                             },
-                                            activeColor: const Color(0xFF3B82F6),
+                                            activeColor:
+                                                const Color(0xFF3B82F6),
                                           ),
                                           const Text(
                                             'Batch Mode',
@@ -521,10 +550,12 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                 TextField(
                                   controller: _messageController,
                                   decoration: InputDecoration(
-                                    labelText: _isJsonFormat ? 'JSON Message' : 'Message content',
-                                    hintText: _isJsonFormat 
-                                      ? '{key: value, number: 123}' 
-                                      : 'Enter your message here...',
+                                    labelText: _isJsonFormat
+                                        ? 'JSON Message'
+                                        : 'Message content',
+                                    hintText: _isJsonFormat
+                                        ? '{key: value, number: 123}'
+                                        : 'Enter your message here...',
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(10),
                                       borderSide: const BorderSide(
@@ -554,16 +585,19 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                       controller: _batchMessagesController,
                                       decoration: InputDecoration(
                                         labelText: 'Batch Messages',
-                                        hintText: 'Enter one message per line...\nMessage 1\nMessage 2\nMessage 3',
+                                        hintText:
+                                            'Enter one message per line...\nMessage 1\nMessage 2\nMessage 3',
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                           borderSide: const BorderSide(
                                             color: Color(0xFFCBD5E1),
                                             width: 2,
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                           borderSide: const BorderSide(
                                             color: Color(0xFF3B82F6),
                                             width: 2,
@@ -571,7 +605,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                         ),
                                         filled: true,
                                         fillColor: Colors.white,
-                                        contentPadding: const EdgeInsets.all(16),
+                                        contentPadding:
+                                            const EdgeInsets.all(16),
                                       ),
                                       maxLines: 10,
                                       minLines: 5,
@@ -589,7 +624,9 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                 ),
                               const SizedBox(height: 20),
                               ElevatedButton.icon(
-                                onPressed: _isSending ? null : () => _sendMessage(context),
+                                onPressed: _isSending
+                                    ? null
+                                    : () => _sendMessage(context),
                                 icon: _isSending
                                     ? const SizedBox(
                                         width: 16,
@@ -601,9 +638,12 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                       )
                                     : const Icon(Icons.send),
                                 label: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
                                   child: Text(
-                                    _isBatchMode ? 'Send Batch' : 'Send Message',
+                                    _isBatchMode
+                                        ? 'Send Batch'
+                                        : 'Send Message',
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -633,7 +673,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                                  border: Border.all(
+                                      color: const Color(0xFFE2E8F0), width: 2),
                                   boxShadow: [
                                     BoxShadow(
                                       color: Colors.black.withOpacity(0.05),
@@ -644,7 +685,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                   ],
                                 ),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
                                     Row(
                                       children: [
@@ -653,7 +695,8 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                           height: 40,
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFF0FDF4),
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
                                           ),
                                           child: const Icon(
                                             Icons.history,
@@ -680,11 +723,15 @@ class _ProducerScreenState extends State<ProducerScreen> {
                                         final message = _sentMessages[index];
                                         return Container(
                                           padding: const EdgeInsets.all(12),
-                                          margin: const EdgeInsets.only(bottom: 8),
+                                          margin:
+                                              const EdgeInsets.only(bottom: 8),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFF8FAFC),
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                                color: const Color(0xFFE2E8F0),
+                                                width: 1),
                                           ),
                                           child: Text(
                                             message,
@@ -712,7 +759,7 @@ class _ProducerScreenState extends State<ProducerScreen> {
 
   Future<void> _sendMessage(BuildContext context) async {
     final kafkaProvider = Provider.of<KafkaProvider>(context, listen: false);
-    
+
     if (_selectedTopic == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -736,15 +783,18 @@ class _ProducerScreenState extends State<ProducerScreen> {
         if (message.isEmpty) {
           throw Exception('Message content cannot be empty');
         }
-        
+
         String processedMessage = message;
         if (_isJsonFormat) {
           // 简单的JSON验证（可以根据需要增强）
           processedMessage = _formatJson(message);
         }
-        
-        await kafkaProvider.producerProvider.sendMessage(_selectedTopic!, processedMessage);
-        
+
+        if (_selectedTopic != null) {
+          await kafkaProvider.producerProvider
+              .sendMessage(_selectedTopic!, processedMessage);
+        }
+
         setState(() {
           _sentMessages.add(processedMessage);
           if (_sentMessages.length > 10) {
@@ -752,7 +802,7 @@ class _ProducerScreenState extends State<ProducerScreen> {
           }
           _messageController.clear();
         });
-        
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -768,17 +818,20 @@ class _ProducerScreenState extends State<ProducerScreen> {
             .map((msg) => msg.trim())
             .where((msg) => msg.isNotEmpty)
             .toList();
-        
+
         if (messages.isEmpty) {
           throw Exception('No messages to send in batch mode');
         }
-        
+
         int sentCount = 0;
-        for (final message in messages) {
-          await kafkaProvider.producerProvider.sendMessage(_selectedTopic!, message);
-          sentCount++;
+        if (_selectedTopic != null) {
+          for (final message in messages) {
+            await kafkaProvider.producerProvider
+                .sendMessage(_selectedTopic!, message);
+            sentCount++;
+          }
         }
-        
+
         setState(() {
           // 只添加最后一条消息到历史记录
           if (messages.isNotEmpty) {
@@ -789,11 +842,12 @@ class _ProducerScreenState extends State<ProducerScreen> {
           }
           _batchMessagesController.clear();
         });
-        
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Successfully sent $sentCount/${messages.length} messages to topic $_selectedTopic'),
+              content: Text(
+                  'Successfully sent $sentCount/${messages.length} messages to topic $_selectedTopic'),
               backgroundColor: const Color(0xFF10B981),
             ),
           );
@@ -814,7 +868,7 @@ class _ProducerScreenState extends State<ProducerScreen> {
       });
     }
   }
-  
+
   String _formatJson(String message) {
     // 实现真正的JSON验证和格式化
     try {
@@ -830,7 +884,9 @@ class _ProducerScreenState extends State<ProducerScreen> {
   Future<void> _refreshTopics(BuildContext context) async {
     final kafkaProvider = Provider.of<KafkaProvider>(context, listen: false);
     try {
-      await kafkaProvider.fetchTopics(kafkaProvider.currentConnection!);
+      if (kafkaProvider.currentConnection != null) {
+        await kafkaProvider.fetchTopics(kafkaProvider.currentConnection!);
+      }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

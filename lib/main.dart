@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'providers/kafka_provider.dart';
 import 'screens/connection_screen.dart';
-import 'screens/topic_choice_screen.dart';
+import 'screens/topic_list_screen.dart';
 import 'screens/producer_screen.dart';
 import 'screens/consumer_screen.dart';
 
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const ConnectionScreen(),
-        '/topics': (context) => const TopicChoiceScreen(),
+        '/topics': (context) => const TopicListScreen(),
         '/producer': (context) => const ProducerScreen(),
         '/consumer': (context) => const ConsumerScreen(),
       },

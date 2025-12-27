@@ -37,7 +37,7 @@ class _TopicChoiceScreenState extends State<TopicChoiceScreen> {
             const SizedBox(width: 12),
             Text(
               kafkaProvider.currentConnection != null
-                  ? 'Kafka - ${kafkaProvider.currentConnection!.name}'
+                  ? 'Kafka - ${kafkaProvider.currentConnection?.name ?? 'Unknown'}'
                   : 'Kafka Connection',
               style: const TextStyle(
                 color: Colors.white,
@@ -151,10 +151,14 @@ class _TopicChoiceScreenState extends State<TopicChoiceScreen> {
                       return Container(
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+                          color: isSelected
+                              ? const Color(0xFFEFF6FF)
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
+                            color: isSelected
+                                ? const Color(0xFF3B82F6)
+                                : Colors.transparent,
                             width: 2,
                           ),
                           boxShadow: [
@@ -179,7 +183,8 @@ class _TopicChoiceScreenState extends State<TopicChoiceScreen> {
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Row(
                                     children: [
@@ -188,7 +193,8 @@ class _TopicChoiceScreenState extends State<TopicChoiceScreen> {
                                         height: 12,
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF3B82F6),
-                                          borderRadius: BorderRadius.circular(6),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
                                         ),
                                       ),
                                       const SizedBox(width: 12),
@@ -197,7 +203,9 @@ class _TopicChoiceScreenState extends State<TopicChoiceScreen> {
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
-                                          color: isSelected ? const Color(0xFF1E40AF) : const Color(0xFF1E293B),
+                                          color: isSelected
+                                              ? const Color(0xFF1E40AF)
+                                              : const Color(0xFF1E293B),
                                         ),
                                       ),
                                     ],
@@ -305,9 +313,9 @@ class _TopicChoiceScreenState extends State<TopicChoiceScreen> {
   void _navigateToProducer(BuildContext context) {
     if (_selectedTopic != null) {
       Navigator.pushNamed(
-        context, 
+        context,
         '/producer',
-        arguments: {'topic': _selectedTopic!},
+        arguments: {'topic': _selectedTopic ?? ''},
       );
     }
   }
@@ -315,9 +323,9 @@ class _TopicChoiceScreenState extends State<TopicChoiceScreen> {
   void _navigateToConsumer(BuildContext context) {
     if (_selectedTopic != null) {
       Navigator.pushNamed(
-        context, 
+        context,
         '/consumer',
-        arguments: {'topic': _selectedTopic!},
+        arguments: {'topic': _selectedTopic ?? ''},
       );
     }
   }

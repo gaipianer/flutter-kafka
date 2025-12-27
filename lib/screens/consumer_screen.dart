@@ -26,7 +26,8 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // 从路由参数中获取初始topic，这个方法在initState之后调用，且widget已完全挂载
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     if (args != null && args.containsKey('topic')) {
       _selectedTopic = args['topic'] as String;
     }
@@ -56,7 +57,7 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
             const SizedBox(width: 12),
             Text(
               kafkaProvider.currentConnection != null
-                  ? 'Kafka Consumer - ${kafkaProvider.currentConnection!.name}'
+                  ? 'Kafka Consumer - ${kafkaProvider.currentConnection?.name ?? 'Unknown'}'
                   : 'Kafka Consumer',
               style: const TextStyle(
                 color: Colors.white,
@@ -118,7 +119,7 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
         elevation: 4,
         shadowColor: Colors.black.withOpacity(0.1),
       ),
-      body: SizedBox.expand(
+      body: SafeArea(
         child: Row(
           children: [
             // 左侧：Topic列表
@@ -142,7 +143,8 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFF3B82F6),
                             borderRadius: BorderRadius.circular(12),
@@ -162,17 +164,23 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                     Expanded(
                       child: ListView.builder(
                         itemCount: kafkaProvider.topics.length,
+                        physics: const AlwaysScrollableScrollPhysics(),
                         itemBuilder: (context, index) {
                           final topic = kafkaProvider.topics[index];
                           final isSelected = _selectedTopic == topic;
-                          
+
                           return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFFEFF6FF) : Colors.white,
+                              color: isSelected
+                                  ? const Color(0xFFEFF6FF)
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: isSelected ? const Color(0xFF3B82F6) : Colors.transparent,
+                                color: isSelected
+                                    ? const Color(0xFF3B82F6)
+                                    : Colors.transparent,
                                 width: 2,
                               ),
                               boxShadow: [
@@ -195,19 +203,23 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                   });
                                 },
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                                  padding:
+                                      const EdgeInsets.fromLTRB(16, 14, 16, 14),
                                   child: Row(
                                     children: [
                                       Container(
                                         width: 14,
                                         height: 14,
                                         decoration: BoxDecoration(
-                                          color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFCBD5E1),
+                                          color: isSelected
+                                              ? const Color(0xFF3B82F6)
+                                              : const Color(0xFFCBD5E1),
                                           shape: BoxShape.circle,
                                           boxShadow: [
                                             if (isSelected)
                                               BoxShadow(
-                                                color: const Color(0xFF3B82F6).withOpacity(0.4),
+                                                color: const Color(0xFF3B82F6)
+                                                    .withOpacity(0.4),
                                                 spreadRadius: 2,
                                                 blurRadius: 8,
                                               ),
@@ -219,22 +231,32 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                         child: Text(
                                           topic,
                                           style: TextStyle(
-                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                            color: isSelected ? const Color(0xFF1E3A8A) : const Color(0xFF334155),
+                                            fontWeight: isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.w500,
+                                            color: isSelected
+                                                ? const Color(0xFF1E3A8A)
+                                                : const Color(0xFF334155),
                                             fontSize: 16,
                                           ),
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: isSelected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
-                                          borderRadius: BorderRadius.circular(12),
+                                          color: isSelected
+                                              ? const Color(0xFF3B82F6)
+                                              : const Color(0xFFE2E8F0),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         child: Icon(
                                           Icons.arrow_right_alt,
                                           size: 16,
-                                          color: isSelected ? Colors.white : const Color(0xFF64748B),
+                                          color: isSelected
+                                              ? Colors.white
+                                              : const Color(0xFF64748B),
                                         ),
                                       ),
                                     ],
@@ -296,20 +318,21 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                           ],
                         ),
                       )
-                    : SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            // Topic详细信息
-                            _TopicDetails(topic: _selectedTopic!),
-                            const SizedBox(height: 20),
-                            
-                            // 消费者配置
-                            Container(
+                    : Column(
+                        children: [
+                          // Topic详细信息
+                          _TopicDetails(topic: _selectedTopic ?? ''),
+                          const SizedBox(height: 20),
+
+                          // 消费者配置
+                          Expanded(
+                            child: Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                                border: Border.all(
+                                    color: const Color(0xFFE2E8F0), width: 2),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.05),
@@ -329,7 +352,8 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                         height: 40,
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFEFF6FF),
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                         child: const Icon(
                                           Icons.settings,
@@ -349,17 +373,20 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 20),
-                                  
+
                                   // 当前主题
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFF8FAFC),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                                      border: Border.all(
+                                          color: const Color(0xFFE2E8F0),
+                                          width: 1),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'Selected Topic',
@@ -371,7 +398,7 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          _selectedTopic!,
+                                          _selectedTopic ?? '',
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Color(0xFF1E293B),
@@ -382,7 +409,7 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 20),
-                                  
+
                                   // 消费位置设置
                                   const Text(
                                     'Consume From',
@@ -393,14 +420,15 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  
+
                                   // 消费位置选项
                                   Column(
                                     children: [
                                       // Latest option
                                       RadioListTile<String>(
                                         title: const Text('Latest'),
-                                        subtitle: const Text('Consume messages from the latest offset'),
+                                        subtitle: const Text(
+                                            'Consume messages from the latest offset'),
                                         value: 'latest',
                                         groupValue: _autoOffsetReset,
                                         onChanged: (value) {
@@ -414,11 +442,12 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                         activeColor: const Color(0xFF3B82F6),
                                         dense: true,
                                       ),
-                                      
+
                                       // Earliest option
                                       RadioListTile<String>(
                                         title: const Text('Earliest'),
-                                        subtitle: const Text('Consume messages from the earliest offset'),
+                                        subtitle: const Text(
+                                            'Consume messages from the earliest offset'),
                                         value: 'earliest',
                                         groupValue: _autoOffsetReset,
                                         onChanged: (value) {
@@ -432,11 +461,12 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                         activeColor: const Color(0xFF3B82F6),
                                         dense: true,
                                       ),
-                                      
+
                                       // Custom Timestamp option
                                       RadioListTile<String>(
                                         title: const Text('Custom Timestamp'),
-                                        subtitle: const Text('Consume messages from a specific timestamp'),
+                                        subtitle: const Text(
+                                            'Consume messages from a specific timestamp'),
                                         value: 'timestamp',
                                         groupValue: _autoOffsetReset,
                                         onChanged: (value) {
@@ -452,7 +482,7 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                       ),
                                     ],
                                   ),
-                                  
+
                                   // 自定义时间戳输入框
                                   if (_useCustomTimestamp)
                                     Column(
@@ -461,9 +491,11 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                         TextField(
                                           controller: _timestampController,
                                           decoration: InputDecoration(
-                                            labelText: 'Timestamp (milliseconds since epoch)',
+                                            labelText:
+                                                'Timestamp (milliseconds since epoch)',
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(10),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
                                             ),
                                             hintText: '1630000000000',
                                             suffixIcon: IconButton(
@@ -486,11 +518,13 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                       ],
                                     ),
                                   const SizedBox(height: 24),
-                                  
+
                                   // 消费控制按钮
                                   ElevatedButton.icon(
-                                    onPressed: () => _toggleConsumption(context),
-                                    icon: kafkaProvider.consumerProvider.isConsuming
+                                    onPressed: () =>
+                                        _toggleConsumption(context),
+                                    icon: kafkaProvider
+                                            .consumerProvider.isConsuming
                                         ? const Icon(Icons.stop)
                                         : const Icon(Icons.play_arrow),
                                     label: Text(
@@ -503,7 +537,8 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                       ),
                                     ),
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: kafkaProvider.consumerProvider.isConsuming
+                                      backgroundColor: kafkaProvider
+                                              .consumerProvider.isConsuming
                                           ? const Color(0xFFEF4444)
                                           : const Color(0xFF10B981),
                                       foregroundColor: Colors.white,
@@ -516,8 +551,8 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                 ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
               ),
             ),
@@ -533,7 +568,8 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+                    border:
+                        Border.all(color: const Color(0xFFE2E8F0), width: 2),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.05),
@@ -576,11 +612,13 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                             ],
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: const Color(0xFFECFDF5),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFA7F3D0), width: 2),
+                              border: Border.all(
+                                  color: const Color(0xFFA7F3D0), width: 2),
                             ),
                             child: Text(
                               '${kafkaProvider.consumerProvider.messages.length}',
@@ -594,7 +632,7 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                         ],
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // 消息列表
                       Expanded(
                         child: kafkaProvider.consumerProvider.messages.isEmpty
@@ -631,73 +669,103 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                               )
                             : ListView.builder(
                                 reverse: false,
-                                itemCount: kafkaProvider.consumerProvider.messages.length,
+                                itemCount: kafkaProvider
+                                    .consumerProvider.messages.length,
+                                physics: const AlwaysScrollableScrollPhysics(),
                                 itemBuilder: (context, index) {
-                                  final message = kafkaProvider.consumerProvider.messages[index];
-                                  final isJson = message['isJson'] as bool;
-                                  final formattedContent = message['formattedContent'] as String;
-                                  
+                                  final message = kafkaProvider
+                                      .consumerProvider.messages[index];
+                                  final isJson =
+                                      message['isJson'] as bool? ?? false;
+                                  final formattedContent =
+                                      message['formattedContent'] as String? ??
+                                          '';
+
                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 16),
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFF8FAFC),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                                      border: Border.all(
+                                          color: const Color(0xFFE2E8F0),
+                                          width: 1),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
                                       children: [
                                         // 消息元数据
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 8),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFEFF6FF),
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
                                           ),
-                                          child: Row(
+                                          child: Wrap(
+                                            spacing: 16,
+                                            runSpacing: 8,
                                             children: [
                                               _MetaItem(
                                                 label: 'Partition',
-                                                value: message['partition'].toString(),
+                                                value: message['partition']
+                                                        ?.toString() ??
+                                                    'N/A',
                                               ),
-                                              const SizedBox(width: 12),
                                               _MetaItem(
                                                 label: 'Offset',
-                                                value: message['offset'].toString(),
+                                                value: message['offset']
+                                                        ?.toString() ??
+                                                    'N/A',
                                               ),
-                                              const SizedBox(width: 12),
                                               _MetaItem(
                                                 label: 'Timestamp',
-                                                value: _formatTimestamp(message['timestamp'] as int),
+                                                value: _formatTimestamp(
+                                                    message['timestamp']
+                                                            as int? ??
+                                                        0),
                                               ),
-                                              if (message['key'] != null && message['key'].toString().isNotEmpty) ...[
-                                                const SizedBox(width: 12),
+                                              if (message['key'] != null &&
+                                                  message['key']
+                                                      .toString()
+                                                      .isNotEmpty) ...[
                                                 _MetaItem(
                                                   label: 'Key',
-                                                  value: message['key'] as String,
+                                                  value: message['key']
+                                                          ?.toString() ??
+                                                      'N/A',
                                                 ),
                                               ],
                                             ],
                                           ),
                                         ),
                                         const SizedBox(height: 12),
-                                        
+
                                         // 消息内容
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
                                             color: Colors.white,
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                                color: const Color(0xFFE2E8F0),
+                                                width: 1),
                                           ),
-                                          child: SingleChildScrollView(
-                                            child: Text(
-                                              formattedContent,
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Color(0xFF374151),
-                                                fontFamily: isJson ? 'Monaco' : null,
+                                          child: ConstrainedBox(
+                                            constraints: const BoxConstraints(
+                                                maxHeight: 300),
+                                            child: SingleChildScrollView(
+                                              child: Text(
+                                                formattedContent,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  color: Color(0xFF374151),
+                                                  fontFamily:
+                                                      isJson ? 'Monaco' : null,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -771,7 +839,8 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
       );
 
       try {
-        await kafkaProvider.consumerProvider.startConsuming(_selectedTopic!);
+        await kafkaProvider.consumerProvider
+            .startConsuming(_selectedTopic ?? '');
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -813,6 +882,7 @@ class _MetaItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           '$label:',
@@ -830,6 +900,45 @@ class _MetaItem extends StatelessWidget {
             color: Color(0xFF1E293B),
             fontWeight: FontWeight.bold,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
+      ],
+    );
+  }
+}
+
+// 详细信息项组件
+class _DetailItem extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailItem({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF64748B),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.bold,
+          ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ],
     );
@@ -847,219 +956,231 @@ class _TopicDetails extends StatelessWidget {
     // 这里需要从Kafka获取topic的详细信息
     // 目前使用模拟数据，实际应用中需要调用Kafka API获取
     final partitions = [
-      {'id': 0, 'leader': 1, 'replicas': [1, 2, 3], 'offset': 12345},
-      {'id': 1, 'leader': 2, 'replicas': [2, 3, 1], 'offset': 67890},
-      {'id': 2, 'leader': 3, 'replicas': [3, 1, 2], 'offset': 111213},
+      {
+        'id': 0,
+        'leader': 1,
+        'replicas': [1, 2, 3],
+        'offset': 12345
+      },
+      {
+        'id': 1,
+        'leader': 2,
+        'replicas': [2, 3, 1],
+        'offset': 67890
+      },
+      {
+        'id': 2,
+        'leader': 3,
+        'replicas': [3, 1, 2],
+        'offset': 111213
+      },
     ];
-    final totalMessages = partitions.fold<int>(0, (sum, p) => sum + (p['offset'] as int));
+    final totalMessages =
+        partitions.fold<int>(0, (sum, p) => sum + (p['offset'] as int? ?? 0));
 
-    return SingleChildScrollView(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              spreadRadius: 1,
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.info_outline,
+                  color: Color(0xFF10B981),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Topic Details',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E3A8A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Topic基本信息
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.info_outline,
-                    color: Color(0xFF10B981),
-                    size: 20,
+                const Text(
+                  'Topic Name',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Topic Details',
-                  style: TextStyle(
-                    fontSize: 18,
+                const SizedBox(height: 4),
+                Text(
+                  topic,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF1E293B),
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E3A8A),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+          ),
+          const SizedBox(height: 16),
 
-            // Topic基本信息
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Topic Name',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF64748B),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    topic,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Color(0xFF1E293B),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+          // Topic统计信息
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
             ),
-            const SizedBox(height: 16),
-
-            // Topic统计信息
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Statistics',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Statistics',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    _DetailItem(
+                        label: 'Partitions',
+                        value: partitions.length.toString()),
+                    _DetailItem(
+                        label: 'Total Messages',
+                        value: totalMessages.toString()),
+                    _DetailItem(
+                        label: 'Leader Replicas',
+                        value: partitions.length.toString()),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Partitions信息
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Partitions',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                for (var partition in partitions)
+                  Column(
                     children: [
-                      _DetailItem(label: 'Partitions', value: partitions.length.toString()),
-                      _DetailItem(label: 'Total Messages', value: totalMessages.toString()),
-                      _DetailItem(label: 'Leader Replicas', value: partitions.length.toString()),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Partitions信息
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Partitions',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  for (var partition in partitions)
-                    Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Partition ${partition['id']}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1E293B),
-                              ),
-                            ),
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _DetailItem(label: 'Offset', value: partition['offset'].toString()),
-                                const SizedBox(width: 16),
-                                _DetailItem(label: 'Leader', value: 'Broker ${partition['leader']}'),
+                                Text(
+                                  'Partition ${partition['id'] as int? ?? 0}',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF1E293B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 16,
+                              runSpacing: 8,
+                              children: [
+                                _DetailItem(
+                                    label: 'Offset',
+                                    value:
+                                        partition['offset']?.toString() ?? '0'),
+                                _DetailItem(
+                                    label: 'Leader',
+                                    value:
+                                        'Broker ${partition['leader'] as int? ?? 0}'),
                               ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Replicas: ${(partition['replicas'] as List<int>).join(', ')}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: const Color(0xFF64748B),
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Replicas: ${((partition['replicas'] as List<int>?) ?? []).join(', ')}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: const Color(0xFF64748B),
                         ),
-                        if (partitions.last != partition)
-                          const Divider(height: 20, thickness: 1, color: const Color(0xFFE2E8F0)),
-                      ],
-                    ),
-                ],
-              ),
+                      ),
+                      if (partitions.last != partition)
+                        const Divider(
+                            height: 20,
+                            thickness: 1,
+                            color: const Color(0xFFE2E8F0)),
+                    ],
+                  ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-// 详情项组件
-class _DetailItem extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _DetailItem({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          '$label:',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF1E293B),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
     );
   }
 }
