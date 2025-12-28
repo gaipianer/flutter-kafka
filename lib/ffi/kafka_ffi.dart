@@ -478,8 +478,11 @@ class KafkaFFI {
   // 消费消息
   static Map<String, dynamic>? consumeMessage(
       KafkaClientHandle consumer, int timeoutMs) {
+    print('🔧 KafkaFFI: Consuming message with timeout: $timeoutMs ms');
     final message = consumeKafkaMessage(consumer, timeoutMs);
+    print('🔧 KafkaFFI: consumeKafkaMessage returned message handle: $message');
     if (message == nullptr) {
+      print('🔧 KafkaFFI: No message available (null handle)');
       return null;
     }
 
@@ -491,10 +494,24 @@ class KafkaFFI {
       final keyPtr = getKafkaMessageKey(message);
       final timestamp = getKafkaMessageTimestamp(message);
 
+      print('🔧 KafkaFFI: Message details:');
+      print('🔧 KafkaFFI:   contentPtr: $contentPtr');
+      print('🔧 KafkaFFI:   topicPtr: $topicPtr');
+      print('🔧 KafkaFFI:   offset: $offset');
+      print('🔧 KafkaFFI:   partition: $partition');
+      print('🔧 KafkaFFI:   keyPtr: $keyPtr');
+      print('🔧 KafkaFFI:   timestamp: $timestamp');
+
       if (contentPtr != nullptr && topicPtr != nullptr) {
         final content = contentPtr.toDartString();
         final topic = topicPtr.toDartString();
         final key = keyPtr != nullptr ? keyPtr.toDartString() : null;
+
+        print('✅ KafkaFFI: Successfully extracted message:');
+        print('✅ KafkaFFI:   topic: $topic');
+        print(
+            '✅ KafkaFFI:   content (first 50 chars): ${content.substring(0, content.length > 50 ? 50 : content.length)}...');
+        print('✅ KafkaFFI:   key: $key');
 
         return {
           'topic': topic,
@@ -505,6 +522,11 @@ class KafkaFFI {
           'timestamp': timestamp,
         };
       }
+      print('⚠️ KafkaFFI: Either contentPtr or topicPtr is null');
+      return null;
+    } catch (e, stackTrace) {
+      print('❌ KafkaFFI: Error processing message: $e');
+      print('❌ KafkaFFI: Stack trace: $stackTrace');
       return null;
     } finally {
       freeKafkaMessage(message);

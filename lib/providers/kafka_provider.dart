@@ -58,6 +58,17 @@ class KafkaProvider extends ChangeNotifier {
   final ProducerProvider _producerProvider = ProducerProvider();
   final ConsumerProvider _consumerProvider = ConsumerProvider();
 
+  // 构造函数
+  KafkaProvider() {
+    // 监听子Provider的变化，当它们变化时通知自己的监听器
+    _producerProvider.addListener(() {
+      notifyListeners();
+    });
+    _consumerProvider.addListener(() {
+      notifyListeners();
+    });
+  }
+
   // Getters
   List<KafkaConnection> get savedConnections => _savedConnections;
   KafkaConnection? get currentConnection => _currentConnection;
@@ -171,6 +182,11 @@ class KafkaProvider extends ChangeNotifier {
 
       // 使用临时客户端获取主题列表
       _tempClient = KafkaFFI.createProducer(connection.bootstrapServers);
+
+      // 添加延迟，确保客户端有足够的时间连接到Kafka集群
+      developer.log('Waiting for Kafka client to connect...');
+      await Future.delayed(const Duration(seconds: 1));
+
       await fetchTopics(connection);
 
       // 连接生产者和消费者

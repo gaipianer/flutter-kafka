@@ -283,10 +283,8 @@ class ConsumerProvider extends ChangeNotifier {
             });
             developer.log(
                 'Added message to list, current message count: ${_messages.length}');
-            // 确保在UI线程执行notifyListeners()
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              notifyListeners(); // 立即通知UI更新
-            });
+            // 立即通知UI更新，不使用addPostFrameCallback以避免延迟
+            notifyListeners();
           } else {
             developer.log('No message received in this poll');
           }
@@ -297,10 +295,8 @@ class ConsumerProvider extends ChangeNotifier {
           timer.cancel();
           _consumeTimer = null;
           _isConsuming = false;
-          // 确保在UI线程执行notifyListeners()
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            notifyListeners();
-          });
+          // 立即通知UI更新
+          notifyListeners();
         }
       });
 
