@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/kafka_provider.dart';
@@ -680,35 +681,101 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                             ),
                                             const SizedBox(height: 12),
 
-                                            // 消息内容
-                                            Container(
-                                              padding: const EdgeInsets.all(12),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                                border: Border.all(
-                                                    color:
-                                                        const Color(0xFFE2E8F0),
-                                                    width: 1),
-                                              ),
-                                              child: ConstrainedBox(
-                                                constraints:
-                                                    const BoxConstraints(
-                                                        maxHeight: 300),
-                                                child: SingleChildScrollView(
-                                                  child: Text(
-                                                    formattedContent,
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Color(0xFF374151),
-                                                      fontFamily: isJson
-                                                          ? 'Monaco'
-                                                          : null,
+                                            // 消息内容和复制按钮
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // 复制按钮
+                                                Align(
+                                                  alignment:
+                                                      Alignment.centerRight,
+                                                  child: TextButton.icon(
+                                                    onPressed: () async {
+                                                      await Clipboard.setData(
+                                                          ClipboardData(
+                                                              text:
+                                                                  formattedContent));
+                                                      if (context.mounted) {
+                                                        ScaffoldMessenger.of(
+                                                                context)
+                                                            .showSnackBar(
+                                                          SnackBar(
+                                                            content: const Text(
+                                                                'Message copied to clipboard'),
+                                                            backgroundColor:
+                                                                const Color(
+                                                                    0xFF10B981),
+                                                            duration:
+                                                                const Duration(
+                                                                    seconds: 2),
+                                                          ),
+                                                        );
+                                                      }
+                                                    },
+                                                    icon: const Icon(Icons.copy,
+                                                        size: 16,
+                                                        color:
+                                                            Color(0xFF64748B)),
+                                                    label: const Text('Copy',
+                                                        style: TextStyle(
+                                                            color: Color(
+                                                                0xFF64748B),
+                                                            fontSize: 12)),
+                                                    style: TextButton.styleFrom(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 4),
+                                                      backgroundColor:
+                                                          const Color(
+                                                              0xFFF1F5F9),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          4)),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
+                                                const SizedBox(height: 8),
+
+                                                // 消息内容
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.all(12),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            6),
+                                                    border: Border.all(
+                                                        color: const Color(
+                                                            0xFFE2E8F0),
+                                                        width: 1),
+                                                  ),
+                                                  child: ConstrainedBox(
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            maxHeight: 300),
+                                                    child:
+                                                        SingleChildScrollView(
+                                                      child: Text(
+                                                        formattedContent,
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          color:
+                                                              Color(0xFF374151),
+                                                          fontFamily: isJson
+                                                              ? 'Monaco'
+                                                              : null,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ),
