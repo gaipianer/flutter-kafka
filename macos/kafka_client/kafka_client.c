@@ -196,13 +196,17 @@ void close_kafka_client(KafkaClientHandle client) {
 // 获取主题列表
 char** get_kafka_topics(KafkaClientHandle client, int32_t* topic_count) {
     if (!client || !topic_count) {
+        printf("❌ C: get_kafka_topics - Invalid parameters: client=%p, topic_count=%p\n", client, topic_count);
         return NULL;
     }
     
+    printf("🔧 C: get_kafka_topics - Client handle received: %p\n", client);
     rd_kafka_t* rk = ((KafkaProducer*)client)->rk;
+    printf("🔧 C: get_kafka_topics - Kafka client pointer: %p\n", rk);
     const struct rd_kafka_metadata* metadata;
     
     // 向broker请求元数据
+    printf("🔧 C: get_kafka_topics - Calling rd_kafka_metadata...\n");
     rd_kafka_resp_err_t err = rd_kafka_metadata(
         rk,                 // 客户端
         1,                  // 包括主题元数据
@@ -211,12 +215,18 @@ char** get_kafka_topics(KafkaClientHandle client, int32_t* topic_count) {
         5000);              // 超时时间（毫秒）
     
     if (err != RD_KAFKA_RESP_ERR_NO_ERROR) {
+        printf("❌ C: get_kafka_topics - Failed to get metadata: %s\n", rd_kafka_err2str(err));
         return NULL;
     }
+    
+    printf("✅ C: get_kafka_topics - Successfully got metadata\n");
+    printf("🔧 C: get_kafka_topics - Broker count: %d\n", metadata->broker_cnt);
+    printf("🔧 C: get_kafka_topics - Topic count: %d\n", metadata->topic_cnt);
     
     // 分配主题名称数组
     char** topic_names = malloc(metadata->topic_cnt * sizeof(char*));
     if (!topic_names) {
+        printf("❌ C: get_kafka_topics - Failed to allocate memory for topic names\n");
         rd_kafka_metadata_destroy(metadata);
         return NULL;
     }
@@ -224,19 +234,71 @@ char** get_kafka_topics(KafkaClientHandle client, int32_t* topic_count) {
     // 复制主题名称
     for (int i = 0; i < metadata->topic_cnt; i++) {
         const struct rd_kafka_metadata_topic* topic = &metadata->topics[i];
+        printf("🔍 C: get_kafka_topics - Topic %d: %s (internal: %d)\n", i, topic->topic, topic->internal);
+        
+        // 跳过内部主题
+        if (topic->internal) {
+            printf("⏭️  C: get_kafka_topics - Skipping internal topic: %s\n", topic->topic);
+            topic_names[i] = NULL;
+            continue;
+        }
+        
         topic_names[i] = strdup(topic->topic);
         if (!topic_names[i]) {
             // 清理已分配的内存
             for (int j = 0; j < i; j++) {
-                free(topic_names[j]);
+                if (topic_names[j]) {
+                    free(topic_names[j]);
+                }
             }
             free(topic_names);
             rd_kafka_metadata_destroy(metadata);
+            printf("❌ C: get_kafka_topics - Failed to duplicate topic name\n");
             return NULL;
         }
     }
     
-    *topic_count = metadata->topic_cnt;
+    // 计算实际要返回的主题数量（排除内部主题）
+    int32_t actual_topic_count = 0;
+    for (int i = 0; i < metadata->topic_cnt; i++) {
+        if (topic_names[i] != NULL) {
+            actual_topic_count++;
+        }
+    }
+    
+    printf("🔧 C: get_kafka_topics - Actual topic count (excluding internal): %d\n", actual_topic_count);
+    
+    // 如果有内部主题，重新分配内存并调整主题数组
+    if (actual_topic_count < metadata->topic_cnt) {
+        char** filtered_topic_names = malloc(actual_topic_count * sizeof(char*));
+        if (!filtered_topic_names) {
+            // 清理已分配的内存
+            for (int i = 0; i < metadata->topic_cnt; i++) {
+                if (topic_names[i]) {
+                    free(topic_names[i]);
+                }
+            }
+            free(topic_names);
+            rd_kafka_metadata_destroy(metadata);
+            printf("❌ C: get_kafka_topics - Failed to allocate memory for filtered topic names\n");
+            return NULL;
+        }
+        
+        int32_t j = 0;
+        for (int i = 0; i < metadata->topic_cnt; i++) {
+            if (topic_names[i] != NULL) {
+                filtered_topic_names[j] = topic_names[i];
+                j++;
+            }
+        }
+        
+        free(topic_names);
+        topic_names = filtered_topic_names;
+    }
+    
+    *topic_count = actual_topic_count;
+    printf("✅ C: get_kafka_topics - Returning %d topics\n", actual_topic_count);
+    
     rd_kafka_metadata_destroy(metadata);
     return topic_names;
 }
