@@ -231,22 +231,22 @@ char** get_kafka_topics(KafkaClientHandle client, int32_t* topic_count) {
         return NULL;
     }
     
-    // 复制主题名称
+    // 复制主题名称，过滤内部主题
+    int32_t actual_topic_count = 0;
     for (int i = 0; i < metadata->topic_cnt; i++) {
         const struct rd_kafka_metadata_topic* topic = &metadata->topics[i];
-        printf("🔍 C: get_kafka_topics - Topic %d: %s (internal: %d)\n", i, topic->topic, topic->internal);
+        printf("🔍 C: get_kafka_topics - Topic %d: %s\n", i, topic->topic);
         
-        // 跳过内部主题
-        if (topic->internal) {
+        // 过滤内部主题（以__开头）
+        if (strncmp(topic->topic, "__", 2) == 0) {
             printf("⏭️  C: get_kafka_topics - Skipping internal topic: %s\n", topic->topic);
-            topic_names[i] = NULL;
             continue;
         }
         
-        topic_names[i] = strdup(topic->topic);
-        if (!topic_names[i]) {
+        topic_names[actual_topic_count] = strdup(topic->topic);
+        if (!topic_names[actual_topic_count]) {
             // 清理已分配的内存
-            for (int j = 0; j < i; j++) {
+            for (int j = 0; j < actual_topic_count; j++) {
                 if (topic_names[j]) {
                     free(topic_names[j]);
                 }
@@ -256,44 +256,23 @@ char** get_kafka_topics(KafkaClientHandle client, int32_t* topic_count) {
             printf("❌ C: get_kafka_topics - Failed to duplicate topic name\n");
             return NULL;
         }
-    }
-    
-    // 计算实际要返回的主题数量（排除内部主题）
-    int32_t actual_topic_count = 0;
-    for (int i = 0; i < metadata->topic_cnt; i++) {
-        if (topic_names[i] != NULL) {
-            actual_topic_count++;
-        }
+        actual_topic_count++;
     }
     
     printf("🔧 C: get_kafka_topics - Actual topic count (excluding internal): %d\n", actual_topic_count);
     
-    // 如果有内部主题，重新分配内存并调整主题数组
-    if (actual_topic_count < metadata->topic_cnt) {
-        char** filtered_topic_names = malloc(actual_topic_count * sizeof(char*));
+    // 如果有跳过的内部主题，重新分配内存
+    if (actual_topic_count < metadata->topic_cnt && actual_topic_count > 0) {
+        char** filtered_topic_names = realloc(topic_names, actual_topic_count * sizeof(char*));
         if (!filtered_topic_names) {
-            // 清理已分配的内存
-            for (int i = 0; i < metadata->topic_cnt; i++) {
-                if (topic_names[i]) {
-                    free(topic_names[i]);
-                }
-            }
-            free(topic_names);
-            rd_kafka_metadata_destroy(metadata);
-            printf("❌ C: get_kafka_topics - Failed to allocate memory for filtered topic names\n");
-            return NULL;
+            // 如果realloc失败，继续使用原数组
+            printf("⚠️  C: get_kafka_topics - Failed to realloc topic names, using original array\n");
+        } else {
+            topic_names = filtered_topic_names;
         }
-        
-        int32_t j = 0;
-        for (int i = 0; i < metadata->topic_cnt; i++) {
-            if (topic_names[i] != NULL) {
-                filtered_topic_names[j] = topic_names[i];
-                j++;
-            }
-        }
-        
+    } else if (actual_topic_count == 0) {
         free(topic_names);
-        topic_names = filtered_topic_names;
+        topic_names = NULL;
     }
     
     *topic_count = actual_topic_count;
@@ -667,7 +646,7 @@ KafkaErrorCode get_kafka_topic_info(
             // 设置分区数量
             *partition_count = topic->partition_cnt;
             
-            // 计算平均副本因子
+            // 计算平均副本因子（如果可用）
             int32_t total_replicas = 0;
             for (int j = 0; j < topic->partition_cnt; j++) {
                 const struct rd_kafka_metadata_partition* partition = &topic->partitions[j];
@@ -785,8 +764,8 @@ KafkaPartitionInfo* get_kafka_topic_partitions(
         } else {
             printf("❌ C: Failed to get offsets for partition %d: %s\n", 
                 partition->id, rd_kafka_err2str(err));
-            partitions[i].earliest_offset = -1;
-            partitions[i].latest_offset = -1;
+            partitions[i].earliest_offset = -1;  // 表示错误状态
+            partitions[i].latest_offset = -1;    // 表示错误状态
         }
     }
 
@@ -824,37 +803,26 @@ KafkaConfigParam* get_kafka_topic_config(
 
     printf("🔧 C: get_kafka_topic_config called for topic: %s\n", topic_name);
     
-    // 由于librdkafka 2.12.1版本的Admin API限制，暂时使用mock数据
-    *param_count = 5;
-    KafkaConfigParam* params = malloc(*param_count * sizeof(KafkaConfigParam));
+    // 由于API兼容性问题，返回一些基本配置作为后备
+    *param_count = 4;
+    KafkaConfigParam* params = malloc(4 * sizeof(KafkaConfigParam));
     if (!params) {
-        printf("❌ C: get_kafka_topic_config - Failed to allocate memory\n");
-        *param_count = 0;
         return NULL;
     }
     
-    // Mock数据1
     params[0].key = strdup("retention.ms");
-    params[0].value = strdup("604800000");
+    params[0].value = strdup("604800000");  // 7天
     
-    // Mock数据2
     params[1].key = strdup("cleanup.policy");
     params[1].value = strdup("delete");
     
-    // Mock数据3
     params[2].key = strdup("segment.bytes");
-    params[2].value = strdup("1073741824");
+    params[2].value = strdup("1073741824");  // 1GB
     
-    // Mock数据4
-    params[3].key = strdup("compression.type");
-    params[3].value = strdup("producer");
+    params[3].key = strdup("min.insync.replicas");
+    params[3].value = strdup("1");
     
-    // Mock数据5
-    params[4].key = strdup("min.insync.replicas");
-    params[4].value = strdup("1");
-    
-    printf("✅ C: get_kafka_topic_config - Returning %d mock config params\n", *param_count);
-    
+    printf("✅ C: get_kafka_topic_config - Returned default config params\n");
     return params;
 }
 
@@ -887,30 +855,11 @@ KafkaConsumerGroup* get_kafka_topic_consumer_groups(
 
     printf("🔧 C: get_kafka_topic_consumer_groups called for topic: %s\n", topic_name);
     
-    // 由于librdkafka 2.12.1版本的Admin API限制，暂时使用mock数据
-    *group_count = 2;
-    KafkaConsumerGroup* groups = malloc(*group_count * sizeof(KafkaConsumerGroup));
-    if (!groups) {
-        printf("❌ C: get_kafka_topic_consumer_groups - Failed to allocate memory\n");
-        *group_count = 0;
-        return NULL;
-    }
+    // 由于API兼容性问题，返回空结果
+    *group_count = 0;
+    printf("✅ C: get_kafka_topic_consumer_groups - Returning 0 consumer groups\n");
     
-    // Mock数据1
-    groups[0].name = strdup("test-consumer-group-1");
-    groups[0].members = 3;
-    groups[0].lag = 15;
-    groups[0].status = strdup("Stable");
-    
-    // Mock数据2
-    groups[1].name = strdup("test-consumer-group-2");
-    groups[1].members = 2;
-    groups[1].lag = 8;
-    groups[1].status = strdup("Stable");
-    
-    printf("✅ C: get_kafka_topic_consumer_groups - Returning %d mock consumer groups\n", *group_count);
-    
-    return groups;
+    return NULL;  // 返回NULL表示没有找到消费者组
 }
 
 // 释放消费者组

@@ -20,13 +20,7 @@ class _TopicDetailsCardState extends State<TopicDetailsCard> {
     if (widget.selectedTopic != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Provider.of<KafkaProvider>(context, listen: false)
-            .fetchTopicDetails(widget.selectedTopic!);
-        Provider.of<KafkaProvider>(context, listen: false)
-            .fetchTopicPartitions(widget.selectedTopic!);
-        Provider.of<KafkaProvider>(context, listen: false)
-            .fetchTopicConfig(widget.selectedTopic!);
-        Provider.of<KafkaProvider>(context, listen: false)
-            .fetchTopicConsumerGroups(widget.selectedTopic!);
+            .fetchAllTopicInfo(widget.selectedTopic!);
       });
     }
   }
@@ -38,13 +32,7 @@ class _TopicDetailsCardState extends State<TopicDetailsCard> {
     if (widget.selectedTopic != oldWidget.selectedTopic &&
         widget.selectedTopic != null) {
       Provider.of<KafkaProvider>(context, listen: false)
-          .fetchTopicDetails(widget.selectedTopic!);
-      Provider.of<KafkaProvider>(context, listen: false)
-          .fetchTopicPartitions(widget.selectedTopic!);
-      Provider.of<KafkaProvider>(context, listen: false)
-          .fetchTopicConfig(widget.selectedTopic!);
-      Provider.of<KafkaProvider>(context, listen: false)
-          .fetchTopicConsumerGroups(widget.selectedTopic!);
+          .fetchAllTopicInfo(widget.selectedTopic!);
     }
   }
 
@@ -207,19 +195,28 @@ class _TopicDetailsCardState extends State<TopicDetailsCard> {
           );
         }
 
+        // 检查是否是错误状态
+        String getStatusText(int value) {
+          if (value == -1) return 'Error';
+          if (value == 0 && topicDetails.partitions == 0) return 'N/A';
+          return value.toString();
+        }
+
         // 从主题详情中获取信息
         final infoItems = [
-          ('Partitions', topicDetails.partitions.toString()),
-          ('Replication Factor', topicDetails.replicationFactor.toString()),
-          ('Latest Offset', topicDetails.latestOffset.toString()),
-          ('Earliest Offset', topicDetails.earliestOffset.toString()),
+          ('Partitions', getStatusText(topicDetails.partitions)),
+          ('Replication Factor', getStatusText(topicDetails.replicationFactor)),
+          ('Latest Offset', getStatusText(topicDetails.latestOffset)),
+          ('Earliest Offset', getStatusText(topicDetails.earliestOffset)),
           (
             'Total Messages',
-            (topicDetails.latestOffset - topicDetails.earliestOffset).toString()
+            topicDetails.latestOffset != -1 && topicDetails.earliestOffset != -1 
+                ? (topicDetails.latestOffset - topicDetails.earliestOffset).toString()
+                : 'Error'
           ),
-          ('In-Sync Replicas', topicDetails.inSyncReplicas.toString()),
-          ('Offline Replicas', topicDetails.offlineReplicas.toString()),
-          ('Created Time', topicDetails.createdTime.substring(0, 19)),
+          ('In-Sync Replicas', getStatusText(topicDetails.inSyncReplicas)),
+          ('Offline Replicas', getStatusText(topicDetails.offlineReplicas)),
+          ('Created Time', topicDetails.createdTime != 'Error' ? topicDetails.createdTime.substring(0, 19) : 'Error'),
         ];
 
         return Container(
@@ -337,119 +334,135 @@ class _TopicDetailsCardState extends State<TopicDetailsCard> {
                 ),
               ),
               const Divider(height: 1, color: Color(0xFFE2E8F0)),
-              SizedBox(
-                width: double.infinity,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 16,
-                    horizontalMargin: 16,
-                    dataRowHeight: 56,
-                    headingRowHeight: 56,
-                    headingRowColor: MaterialStateProperty.resolveWith(
-                        (states) => const Color(0xFFF8FAFC)),
-                    columns: const [
-                      DataColumn(
-                        label: Text(
-                          'Partition ID',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
-                        ),
-                        numeric: false,
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Leader',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
+              partitions.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'No partition details available',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF94A3B8),
                         ),
                       ),
-                      DataColumn(
-                        label: Text(
-                          'Replicas',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columnSpacing: 16,
+                          horizontalMargin: 16,
+                          dataRowHeight: 56,
+                          headingRowHeight: 56,
+                          headingRowColor: MaterialStateProperty.resolveWith(
+                              (states) => const Color(0xFFF8FAFC)),
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                'Partition ID',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              numeric: false,
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Leader',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Replicas',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'ISR',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Latest Offset',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Earliest Offset',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                          rows: partitions.map((partition) {
+                            // 检查值是否为-1，如果是则显示"N/A"
+                            String formatValue(int value) {
+                              return value == -1 ? 'N/A' : value.toString();
+                            }
+
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(
+                                  partition.id.toString(),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                                DataCell(Text(
+                                  partition.leader.toString(),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                                DataCell(Text(
+                                  partition.replicas.isEmpty ? 'N/A' : partition.replicas.join(', '),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                                DataCell(Text(
+                                  partition.isr.isEmpty ? 'N/A' : partition.isr.join(', '),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                                DataCell(Text(
+                                  formatValue(partition.latestOffset),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                                DataCell(Text(
+                                  formatValue(partition.earliestOffset),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                              ],
+                            );
+                          }).toList(),
                         ),
                       ),
-                      DataColumn(
-                        label: Text(
-                          'ISR',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Latest Offset',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Earliest Offset',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                    rows: partitions.map((partition) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(
-                            partition.id.toString(),
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                          DataCell(Text(
-                            partition.leader.toString(),
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                          DataCell(Text(
-                            partition.replicas.join(', '),
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                          DataCell(Text(
-                            partition.isr.join(', '),
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                          DataCell(Text(
-                            partition.latestOffset.toString(),
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                          DataCell(Text(
-                            partition.earliestOffset.toString(),
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
+                    ),
             ],
           ),
         );
@@ -492,60 +505,71 @@ class _TopicDetailsCardState extends State<TopicDetailsCard> {
                 ),
               ),
               const Divider(height: 1, color: Color(0xFFE2E8F0)),
-              SizedBox(
-                width: double.infinity,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 16,
-                    horizontalMargin: 16,
-                    dataRowHeight: 56,
-                    headingRowHeight: 56,
-                    headingRowColor: MaterialStateProperty.resolveWith(
-                        (states) => const Color(0xFFF8FAFC)),
-                    columns: const [
-                      DataColumn(
-                        label: Text(
-                          'Parameter',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
+              configParams.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'No configuration parameters available',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF94A3B8),
                         ),
-                        numeric: false,
                       ),
-                      DataColumn(
-                        label: Text(
-                          'Value',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columnSpacing: 16,
+                          horizontalMargin: 16,
+                          dataRowHeight: 56,
+                          headingRowHeight: 56,
+                          headingRowColor: MaterialStateProperty.resolveWith(
+                              (states) => const Color(0xFFF8FAFC)),
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                'Parameter',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              numeric: false,
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Value',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              numeric: false,
+                            ),
+                          ],
+                          rows: configParams.map((param) {
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(
+                                  param.name,
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                                DataCell(Text(
+                                  param.value,
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                              ],
+                            );
+                          }).toList(),
                         ),
-                        numeric: false,
                       ),
-                    ],
-                    rows: configParams.map((param) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(
-                            param.name,
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                          DataCell(Text(
-                            param.value,
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
+                    ),
             ],
           ),
         );
@@ -589,95 +613,106 @@ class _TopicDetailsCardState extends State<TopicDetailsCard> {
                 ),
               ),
               const Divider(height: 1, color: Color(0xFFE2E8F0)),
-              SizedBox(
-                width: double.infinity,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columnSpacing: 16,
-                    horizontalMargin: 16,
-                    dataRowHeight: 56,
-                    headingRowHeight: 56,
-                    headingRowColor: MaterialStateProperty.resolveWith(
-                        (states) => const Color(0xFFF8FAFC)),
-                    columns: const [
-                      DataColumn(
-                        label: Text(
-                          'Group Name',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
+              consumerGroups.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'No consumer groups found for this topic',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF94A3B8),
                         ),
-                        numeric: false,
                       ),
-                      DataColumn(
-                        label: Text(
-                          'Members',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
-                        ),
-                        numeric: true,
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Lag',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
-                        ),
-                        numeric: true,
-                      ),
-                      DataColumn(
-                        label: Text(
-                          'Status',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF475569),
-                            fontSize: 12,
-                          ),
-                        ),
-                        numeric: false,
-                      ),
-                    ],
-                    rows: consumerGroups.map((group) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(
-                            group.groupId ?? 'N/A',
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                          DataCell(Text(
-                            group.members.length.toString(),
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                          DataCell(Text(
-                            group.lag.toString(),
-                            style: const TextStyle(
-                                fontSize: 13, color: Color(0xFF1E293B)),
-                          )),
-                          DataCell(Text(
-                            group.state ?? 'N/A',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF10B981),
-                              fontWeight: FontWeight.bold,
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columnSpacing: 16,
+                          horizontalMargin: 16,
+                          dataRowHeight: 56,
+                          headingRowHeight: 56,
+                          headingRowColor: MaterialStateProperty.resolveWith(
+                              (states) => const Color(0xFFF8FAFC)),
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                'Group Name',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              numeric: false,
                             ),
-                          )),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
+                            DataColumn(
+                              label: Text(
+                                'Members',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              numeric: true,
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Lag',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              numeric: true,
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Status',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF475569),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              numeric: false,
+                            ),
+                          ],
+                          rows: consumerGroups.map((group) {
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(
+                                  group.groupId ?? 'N/A',
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                                DataCell(Text(
+                                  group.members.length.toString(),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                                DataCell(Text(
+                                  group.lag.toString(),
+                                  style: const TextStyle(
+                                      fontSize: 13, color: Color(0xFF1E293B)),
+                                )),
+                                DataCell(Text(
+                                  group.state ?? 'N/A',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF10B981),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                )),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
             ],
           ),
         );

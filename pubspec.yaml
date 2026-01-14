@@ -20,6 +20,8 @@ dependencies:
   path_provider: ^2.1.3
   # path_provider的macOS实现
   path_provider_macos: ^2.0.7
+  # 文件选择器
+  file_picker: ^8.1.2
 
 dev_dependencies:
   flutter_test:

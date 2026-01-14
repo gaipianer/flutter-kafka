@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../providers/kafka_provider.dart';
 
@@ -16,6 +17,11 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
   String _autoOffsetReset = 'latest'; // earliest, latest
   final _timestampController = TextEditingController();
   bool _useCustomTimestamp = false;
+
+  // 自动保存配置
+  bool _autoSaveEnabled = false;
+  String _autoSaveFormat = 'json'; // json, txt
+  String? _autoSaveFilePath;
 
   @override
   void initState() {
@@ -434,6 +440,144 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                       ),
                                     const SizedBox(height: 24),
 
+                                    // 自动保存配置
+                                    Row(
+                                      children: [
+                                        const Text(
+                                          'Auto Save',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF1E293B),
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Switch(
+                                          value: _autoSaveEnabled,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              _autoSaveEnabled = value;
+                                            });
+                                          },
+                                          activeColor: const Color(0xFF3B82F6),
+                                        ),
+                                      ],
+                                    ),
+
+                                    if (_autoSaveEnabled) ...[
+                                      const SizedBox(height: 12),
+                                      // 格式选择
+                                      Column(
+                                        children: [
+                                          RadioListTile<String>(
+                                            title: const Text('JSON'),
+                                            subtitle: const Text(
+                                                'Save as JSON array format'),
+                                            value: 'json',
+                                            groupValue: _autoSaveFormat,
+                                            onChanged: (value) {
+                                              if (value != null) {
+                                                setState(() {
+                                                  _autoSaveFormat = value;
+                                                  // 更新文件扩展名
+                                                  if (_autoSaveFilePath != null) {
+                                                    _autoSaveFilePath = _updateFileExtension(
+                                                        _autoSaveFilePath!, value);
+                                                  }
+                                                });
+                                              }
+                                            },
+                                            activeColor: const Color(0xFF3B82F6),
+                                            dense: true,
+                                          ),
+                                          RadioListTile<String>(
+                                            title: const Text('CSV'),
+                                            subtitle: const Text(
+                                                'Save as CSV format (one message per line)'),
+                                            value: 'csv',
+                                            groupValue: _autoSaveFormat,
+                                            onChanged: (value) {
+                                              if (value != null) {
+                                                setState(() {
+                                                  _autoSaveFormat = value;
+                                                  if (_autoSaveFilePath != null) {
+                                                    _autoSaveFilePath = _updateFileExtension(
+                                                        _autoSaveFilePath!, value);
+                                                  }
+                                                });
+                                              }
+                                            },
+                                            activeColor: const Color(0xFF3B82F6),
+                                            dense: true,
+                                          ),
+                                          RadioListTile<String>(
+                                            title: const Text('TXT'),
+                                            subtitle: const Text(
+                                                'Save as plain text (one message per line)'),
+                                            value: 'txt',
+                                            groupValue: _autoSaveFormat,
+                                            onChanged: (value) {
+                                              if (value != null) {
+                                                setState(() {
+                                                  _autoSaveFormat = value;
+                                                  if (_autoSaveFilePath != null) {
+                                                    _autoSaveFilePath = _updateFileExtension(
+                                                        _autoSaveFilePath!, value);
+                                                  }
+                                                });
+                                              }
+                                            },
+                                            activeColor: const Color(0xFF3B82F6),
+                                            dense: true,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      // 文件路径选择
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                              color: const Color(0xFFE2E8F0),
+                                              width: 1),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.folder_outlined,
+                                              size: 18,
+                                              color: Color(0xFF64748B),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                _autoSaveFilePath ?? 'No file selected',
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: _autoSaveFilePath != null
+                                                      ? const Color(0xFF1E293B)
+                                                      : const Color(0xFF94A3B8),
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: _selectAutoSaveFile,
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: const Color(0xFF3B82F6),
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 12, vertical: 6),
+                                              ),
+                                              child: const Text('Browse'),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                    const SizedBox(height: 24),
+
                                     // 消费控制按钮
                                     Consumer<KafkaProvider>(
                                       builder: (context, kafkaProvider, child) {
@@ -539,23 +683,59 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
                                   ),
                                 ],
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFECFDF5),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                      color: const Color(0xFFA7F3D0), width: 2),
-                                ),
-                                child: Text(
-                                  '${consumerProvider.messages.length}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF065F46),
-                                    fontWeight: FontWeight.bold,
+                              Row(
+                                children: [
+                                  // 保存文件按钮
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 12),
+                                    child: TextButton.icon(
+                                      onPressed: () => _saveMessages(context),
+                                      icon: const Icon(
+                                        Icons.save,
+                                        size: 16,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                      label: const Text(
+                                        'Save',
+                                        style: TextStyle(
+                                          color: Color(0xFF64748B),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        backgroundColor:
+                                            const Color(0xFFF1F5F9),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFECFDF5),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                          color: const Color(0xFFA7F3D0),
+                                          width: 2),
+                                    ),
+                                    child: Text(
+                                      '${consumerProvider.messages.length}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF065F46),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -796,9 +976,136 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
     );
   }
 
+  // 保存消息到文件的方法
+  Future<void> _saveMessages(BuildContext context) async {
+    final kafkaProvider = Provider.of<KafkaProvider>(context, listen: false);
+    final consumerProvider = kafkaProvider.consumerProvider;
+
+    if (consumerProvider.messages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No messages to save'),
+          backgroundColor: Colors.orange[700],
+        ),
+      );
+      return;
+    }
+
+    // 显示文件格式选择对话框
+    String? selectedFormat;
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select File Format'),
+        content: const Text('Choose the format to save your messages:'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              selectedFormat = 'json';
+              Navigator.pop(context);
+            },
+            child: const Text('JSON'),
+          ),
+          TextButton(
+            onPressed: () {
+              selectedFormat = 'csv';
+              Navigator.pop(context);
+            },
+            child: const Text('CSV'),
+          ),
+          TextButton(
+            onPressed: () {
+              selectedFormat = 'txt';
+              Navigator.pop(context);
+            },
+            child: const Text('TXT'),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedFormat == null) {
+      return; // 用户取消了选择
+    }
+
+    // 使用file_picker让用户选择保存位置和文件名
+    try {
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Messages',
+        fileName: 'kafka_messages.$selectedFormat',
+        type: FileType.custom,
+        allowedExtensions: [selectedFormat!],
+      );
+
+      if (result == null) {
+        return; // 用户取消了选择
+      }
+
+      // 保存文件
+      await consumerProvider.saveMessagesToFile(selectedFormat!, result);
+
+      // 显示保存成功的提示
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Successfully saved ${consumerProvider.messages.length} messages to $result'),
+            backgroundColor: const Color(0xFF10B981),
+          ),
+        );
+      }
+    } catch (e) {
+      // 显示保存失败的提示
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save messages: $e'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
+  }
+
   String _formatTimestamp(int timestamp) {
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
     return '${date.toLocal().toString().substring(0, 19)}';
+  }
+
+  // 选择自动保存文件路径
+  Future<void> _selectAutoSaveFile() async {
+    try {
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Select Auto-Save File',
+        fileName: 'kafka_messages.$_autoSaveFormat',
+        type: FileType.custom,
+        allowedExtensions: [_autoSaveFormat],
+      );
+
+      if (result != null) {
+        setState(() {
+          _autoSaveFilePath = result;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to select file: $e'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
+  }
+
+  // 更新文件扩展名
+  String _updateFileExtension(String filePath, String newExtension) {
+    final lastDot = filePath.lastIndexOf('.');
+    if (lastDot != -1) {
+      return '${filePath.substring(0, lastDot)}.$newExtension';
+    }
+    return '$filePath.$newExtension';
   }
 
   Future<void> _toggleConsumption(BuildContext context) async {
@@ -857,9 +1164,29 @@ class _ConsumerScreenState extends State<ConsumerScreen> {
       // 立即更新UI状态，显示正在启动
       setState(() {});
 
+      // 验证自动保存配置
+      if (_autoSaveEnabled && _autoSaveFilePath == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please select a file path for auto-save'),
+              backgroundColor: Color(0xFFF59E0B),
+            ),
+          );
+        }
+        return;
+      }
+
       kafkaProvider.consumerProvider.setConsumePosition(
         autoOffsetReset: _autoOffsetReset,
         timestamp: timestamp,
+      );
+
+      // 设置自动保存配置
+      kafkaProvider.consumerProvider.setAutoSaveConfig(
+        enabled: _autoSaveEnabled,
+        filePath: _autoSaveFilePath,
+        format: _autoSaveFormat,
       );
 
       try {

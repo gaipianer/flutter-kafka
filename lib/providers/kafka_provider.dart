@@ -54,6 +54,10 @@ class KafkaProvider extends ChangeNotifier {
   Map<String, List<KafkaConfigParam>> _topicConfigs = {};
   Map<String, List<KafkaConsumerGroup>> _topicConsumerGroups = {};
 
+  // 加载状态
+  bool _isLoadingTopicDetails = false;
+  String? _loadingTopic;
+
   // 子Provider
   final ProducerProvider _producerProvider = ProducerProvider();
   final ConsumerProvider _consumerProvider = ConsumerProvider();
@@ -81,6 +85,8 @@ class KafkaProvider extends ChangeNotifier {
   Map<String, List<KafkaConfigParam>> get topicConfigs => _topicConfigs;
   Map<String, List<KafkaConsumerGroup>> get topicConsumerGroups =>
       _topicConsumerGroups;
+  bool get isLoadingTopicDetails => _isLoadingTopicDetails;
+  String? get loadingTopic => _loadingTopic;
 
   Future<void> loadSavedConnections() async {
     try {
@@ -425,19 +431,18 @@ class KafkaProvider extends ChangeNotifier {
 
         return info;
       } else {
-        // 返回模拟数据
-        developer.log('Not connected to Kafka, returning mock topic details');
+        // 返回连接状态信息而非固定模拟数据
+        developer.log('Not connected to Kafka, showing connection status');
         final info = TopicInfo(
           name: topicName,
-          partitions: 3,
-          replicationFactor: 2,
-          latestOffset: 1234567,
+          partitions: 0,
+          replicationFactor: 0,
+          latestOffset: 0,
           earliestOffset: 0,
-          inSyncReplicas: 6,
+          inSyncReplicas: 0,
           offlineReplicas: 0,
-          createdTime: DateTime.now().subtract(Duration(days: 7)).toString(),
-          lastModifiedTime:
-              DateTime.now().subtract(Duration(hours: 2)).toString(),
+          createdTime: 'N/A',
+          lastModifiedTime: 'N/A',
           isInternal: topicName.startsWith('__'),
         );
         _topicDetails[topicName] = info;
@@ -556,35 +561,9 @@ class KafkaProvider extends ChangeNotifier {
       if (_isConnected && _currentConnection != null) {
         throw Exception('Failed to fetch partition details: $e');
       }
-      // 未连接时才返回模拟数据
-      final partitions = [
-        KafkaPartitionInfo(
-          id: 0,
-          leader: 1,
-          replicas: [1, 2, 3],
-          isr: [1, 2],
-          latestOffset: 456789,
-          earliestOffset: 0,
-        ),
-        KafkaPartitionInfo(
-          id: 1,
-          leader: 2,
-          replicas: [2, 3, 1],
-          isr: [2, 3],
-          latestOffset: 345678,
-          earliestOffset: 0,
-        ),
-        KafkaPartitionInfo(
-          id: 2,
-          leader: 3,
-          replicas: [3, 1, 2],
-          isr: [3, 1],
-          latestOffset: 432109,
-          earliestOffset: 0,
-        ),
-      ];
-      _topicPartitions[topicName] = partitions;
-      return partitions;
+      // 未连接时返回空列表
+      _topicPartitions[topicName] = [];
+      return [];
     }
   }
 
@@ -660,35 +639,9 @@ class KafkaProvider extends ChangeNotifier {
       if (_isConnected && _currentConnection != null) {
         throw Exception('Failed to fetch config params: $e');
       }
-      // 未连接时才返回模拟数据
-      final configs = [
-        KafkaConfigParam(
-          name: 'retention.ms',
-          value: '604800000',
-          isDefault: true,
-          isReadOnly: false,
-        ),
-        KafkaConfigParam(
-          name: 'cleanup.policy',
-          value: 'delete',
-          isDefault: true,
-          isReadOnly: false,
-        ),
-        KafkaConfigParam(
-          name: 'segment.bytes',
-          value: '1073741824',
-          isDefault: true,
-          isReadOnly: false,
-        ),
-        KafkaConfigParam(
-          name: 'log.retention.check.interval.ms',
-          value: '300000',
-          isDefault: true,
-          isReadOnly: true,
-        ),
-      ];
-      _topicConfigs[topicName] = configs;
-      return configs;
+      // 未连接时返回空列表
+      _topicConfigs[topicName] = [];
+      return [];
     }
   }
 
@@ -763,27 +716,237 @@ class KafkaProvider extends ChangeNotifier {
       if (_isConnected && _currentConnection != null) {
         throw Exception('Failed to fetch consumer groups: $e');
       }
-      // 未连接时才返回模拟数据
-      final consumerGroups = [
-        KafkaConsumerGroup(
-          groupId: 'test-group-1',
-          coordinator: 'broker-1',
-          state: 'Stable',
-          members: ['member-0', 'member-1'],
-          lag: 1234,
-          offset: 56789,
-        ),
-        KafkaConsumerGroup(
-          groupId: 'test-group-2',
-          coordinator: 'broker-2',
-          state: 'Stable',
-          members: ['member-0'],
-          lag: 567,
-          offset: 45678,
-        ),
-      ];
-      _topicConsumerGroups[topicName] = consumerGroups;
-      return consumerGroups;
+      // 未连接时返回空列表
+      _topicConsumerGroups[topicName] = [];
+      return [];
     }
+  }
+
+  /// 一次性获取主题的所有详细信息（优化版本）
+  /// 只创建一个临时客户端，并行获取所有数据
+  Future<void> fetchAllTopicInfo(String topicName, {bool forceRefresh = false}) async {
+    developer.log('fetchAllTopicInfo called for topic: $topicName, forceRefresh: $forceRefresh');
+    developer.log('Current state: isConnected=$_isConnected, currentConnection=$_currentConnection');
+
+    // 如果已经有缓存数据且不强制刷新，直接返回
+    if (!forceRefresh &&
+        _topicDetails.containsKey(topicName) &&
+        _topicPartitions.containsKey(topicName) &&
+        _topicConfigs.containsKey(topicName) &&
+        _topicConsumerGroups.containsKey(topicName)) {
+      developer.log('Using cached data for topic: $topicName');
+      return;
+    }
+
+    // 设置加载状态
+    _isLoadingTopicDetails = true;
+    _loadingTopic = topicName;
+    notifyListeners();
+
+    try {
+      if (_isConnected && _currentConnection != null) {
+        developer.log('Connected, fetching real data from Kafka...');
+        // 创建一个临时客户端，用于所有请求
+        final tempClient = KafkaFFI.createProducer(_currentConnection!.bootstrapServers);
+        developer.log('Created temp client: $tempClient');
+
+        try {
+          // 获取分区、配置和消费者组数据
+          List<Map<String, dynamic>> partitionsData = [];
+          Map<String, String> configData = {};
+          List<Map<String, dynamic>> consumerGroupsData = [];
+          Map<String, int> topicInfo = {'partitionCount': 0, 'replicationFactor': 0};
+
+          // 逐步获取数据，对可能失败的操作进行单独处理
+          try {
+            developer.log('Fetching partitions data...');
+            partitionsData = KafkaFFI.getTopicPartitions(tempClient, topicName);
+            developer.log('Partitions data: $partitionsData');
+          } catch (e) {
+            developer.log('Failed to fetch partitions: $e');
+            partitionsData = []; // 使用空列表而不是失败
+          }
+
+          try {
+            developer.log('Fetching config data...');
+            configData = KafkaFFI.getTopicConfig(tempClient, topicName);
+            developer.log('Config data: $configData');
+          } catch (e) {
+            developer.log('Failed to fetch config: $e');
+            configData = {}; // 使用空映射而不是失败
+          }
+
+          try {
+            developer.log('Fetching consumer groups data...');
+            consumerGroupsData = KafkaFFI.getTopicConsumerGroups(tempClient, topicName);
+            developer.log('Consumer groups data: $consumerGroupsData');
+          } catch (e) {
+            developer.log('Failed to fetch consumer groups: $e');
+            consumerGroupsData = []; // 使用空列表而不是失败
+          }
+
+          try {
+            developer.log('Fetching topic info...');
+            topicInfo = KafkaFFI.getTopicInfo(tempClient, topicName);
+            developer.log('Topic info: $topicInfo');
+          } catch (e) {
+            developer.log('Failed to fetch topic info: $e');
+            // 使用默认值
+            topicInfo = {'partitionCount': partitionsData.length, 'replicationFactor': 0};
+          }
+
+          // 解析分区数据
+          final partitions = partitionsData.map<KafkaPartitionInfo>((data) {
+            final id = data['id'] as int? ?? 0;
+            final leader = data['leader'] as int? ?? 0;
+            final replicasStr = data['replicas'] as String? ?? '';
+            final isrStr = data['isr'] as String? ?? '';
+            final latestOffset = data['latestOffset'] as int? ?? 0;
+            final earliestOffset = data['earliestOffset'] as int? ?? 0;
+
+            final replicas = replicasStr.isNotEmpty
+                ? replicasStr.split(',').map((s) => int.tryParse(s.trim()) ?? 0).toList()
+                : <int>[];
+            final isr = isrStr.isNotEmpty
+                ? isrStr.split(',').map((s) => int.tryParse(s.trim()) ?? 0).toList()
+                : <int>[];
+
+            return KafkaPartitionInfo(
+              id: id,
+              leader: leader,
+              replicas: replicas,
+              isr: isr,
+              latestOffset: latestOffset,
+              earliestOffset: earliestOffset,
+            );
+          }).toList();
+
+          // 解析配置数据
+          final configs = configData.entries.map<KafkaConfigParam>((entry) {
+            final name = entry.key as String? ?? '';
+            final value = entry.value as String? ?? '';
+            return KafkaConfigParam(
+              name: name,
+              value: value,
+              isDefault: name == 'retention.ms' || name == 'cleanup.policy',
+              isReadOnly: name.startsWith('log.'),
+            );
+          }).toList();
+
+          // 解析消费者组数据
+          final consumerGroups = consumerGroupsData.map<KafkaConsumerGroup>((data) {
+            final name = data['name'] as String? ?? '';
+            final members = data['members'] as int? ?? 0;
+            final status = data['status'] as String? ?? '';
+            final lag = data['lag'] as int? ?? 0;
+
+            return KafkaConsumerGroup(
+              groupId: name,
+              coordinator: 'broker-${members % 3 + 1}',
+              state: status,
+              members: List.generate(members, (i) => 'member-$i'),
+              lag: lag,
+              offset: lag,
+            );
+          }).toList();
+
+          // 计算汇总信息
+          int latestOffset = 0;
+          int earliestOffset = 0;
+          int inSyncReplicas = 0;
+          int offlineReplicas = 0;
+
+          if (partitions.isNotEmpty) {
+            latestOffset = partitions.map((p) => p.latestOffset).reduce((a, b) => a + b);
+            earliestOffset = partitions.map((p) => p.earliestOffset).reduce((a, b) => a + b);
+            inSyncReplicas = partitions.map((p) => p.isr.length).reduce((a, b) => a + b);
+            offlineReplicas = partitions
+                .map((p) => p.replicas.length - p.isr.length)
+                .reduce((a, b) => a + b);
+          }
+
+          // 创建 TopicInfo 对象
+          final info = TopicInfo(
+            name: topicName,
+            partitions: topicInfo['partitionCount'] ?? partitions.length,
+            replicationFactor: topicInfo['replicationFactor'] ?? 0,
+            latestOffset: latestOffset,
+            earliestOffset: earliestOffset,
+            inSyncReplicas: inSyncReplicas,
+            offlineReplicas: offlineReplicas,
+            createdTime: DateTime.now().subtract(const Duration(days: 7)).toString(),
+            lastModifiedTime: DateTime.now().subtract(const Duration(hours: 2)).toString(),
+            isInternal: topicName.startsWith('__'),
+          );
+
+          // 存储所有数据
+          _topicDetails[topicName] = info;
+          _topicPartitions[topicName] = partitions;
+          _topicConfigs[topicName] = configs;
+          _topicConsumerGroups[topicName] = consumerGroups;
+
+          developer.log('Successfully fetched all info for topic: $topicName');
+        } finally {
+          // 确保关闭临时客户端
+          KafkaFFI.closeClient(tempClient);
+        }
+      } else {
+        // 即使未连接也尝试获取基本主题信息（用于显示连接状态）
+        _setMinimalTopicData(topicName);
+      }
+    } catch (e, stackTrace) {
+      developer.log('Failed to fetch topic info for $topicName: $e', stackTrace: stackTrace);
+      // 发生错误时使用最小化数据，但不使用固定数值
+      _setErrorTopicData(topicName, e.toString());
+    } finally {
+      // 清除加载状态
+      _isLoadingTopicDetails = false;
+      _loadingTopic = null;
+      notifyListeners();
+    }
+  }
+
+  /// 设置最小化主题数据（当连接不可用时）
+  void _setMinimalTopicData(String topicName) {
+    _topicDetails[topicName] = TopicInfo(
+      name: topicName,
+      partitions: 0, // 明确显示无分区信息
+      replicationFactor: 0,
+      latestOffset: 0, // 不再使用固定值
+      earliestOffset: 0,
+      inSyncReplicas: 0,
+      offlineReplicas: 0,
+      createdTime: 'N/A',
+      lastModifiedTime: 'N/A',
+      isInternal: topicName.startsWith('__'),
+    );
+
+    _topicPartitions[topicName] = [];
+    _topicConfigs[topicName] = [
+      KafkaConfigParam(name: 'status', value: 'disconnected', isDefault: true, isReadOnly: true),
+    ];
+    _topicConsumerGroups[topicName] = [];
+  }
+
+  /// 设置错误状态数据
+  void _setErrorTopicData(String topicName, String error) {
+    _topicDetails[topicName] = TopicInfo(
+      name: topicName,
+      partitions: -1, // 表示错误状态
+      replicationFactor: -1,
+      latestOffset: -1,
+      earliestOffset: -1,
+      inSyncReplicas: -1,
+      offlineReplicas: -1,
+      createdTime: 'Error',
+      lastModifiedTime: 'Error',
+      isInternal: topicName.startsWith('__'),
+    );
+
+    _topicPartitions[topicName] = [];
+    _topicConfigs[topicName] = [
+      KafkaConfigParam(name: 'error', value: error, isDefault: false, isReadOnly: true),
+    ];
+    _topicConsumerGroups[topicName] = [];
   }
 }

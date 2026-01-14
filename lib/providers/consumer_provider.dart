@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:async';
+import 'dart:io';
 import '../ffi/kafka_ffi.dart';
 
 class ConsumerProvider extends ChangeNotifier {
@@ -22,6 +23,13 @@ class ConsumerProvider extends ChangeNotifier {
   String _autoOffsetReset = 'latest'; // 'earliest', 'latest'
   int? _seekTimestamp; // 用于按时间戳重置偏移量
 
+  // 自动保存配置
+  bool _autoSaveEnabled = false;
+  String? _autoSaveFilePath;
+  String _autoSaveFormat = 'json'; // 'json', 'txt'
+  IOSink? _fileSink;
+  bool _isFirstMessage = true; // 用于JSON格式的数组处理
+
   // Getters
   bool get isConsuming => _isConsuming;
   List<Map<String, dynamic>> get messages => _messages;
@@ -29,6 +37,9 @@ class ConsumerProvider extends ChangeNotifier {
   int? get seekTimestamp => _seekTimestamp;
   bool get isConnected => _isConnected;
   KafkaClientHandle? get consumer => _consumer;
+  bool get autoSaveEnabled => _autoSaveEnabled;
+  String? get autoSaveFilePath => _autoSaveFilePath;
+  String get autoSaveFormat => _autoSaveFormat;
 
   // 清空消息列表
   void clearMessages() {
@@ -49,6 +60,30 @@ class ConsumerProvider extends ChangeNotifier {
   void resetConsumePosition() {
     _autoOffsetReset = 'latest';
     _seekTimestamp = null;
+    notifyListeners();
+  }
+
+  // 设置自动保存配置
+  void setAutoSaveConfig({
+    required bool enabled,
+    String? filePath,
+    String? format,
+  }) {
+    _autoSaveEnabled = enabled;
+    if (filePath != null) {
+      _autoSaveFilePath = filePath;
+    }
+    if (format != null) {
+      _autoSaveFormat = format;
+    }
+    notifyListeners();
+  }
+
+  // 重置自动保存配置
+  void resetAutoSaveConfig() {
+    _autoSaveEnabled = false;
+    _autoSaveFilePath = null;
+    _autoSaveFormat = 'json';
     notifyListeners();
   }
 
@@ -237,7 +272,12 @@ class ConsumerProvider extends ChangeNotifier {
         developer.log('Successfully seeked to timestamp: $_seekTimestamp');
       }
 
-      // 5. 开始轮询消息
+      // 5. 初始化自动保存文件
+      if (_autoSaveEnabled && _autoSaveFilePath != null) {
+        await _initAutoSaveFile();
+      }
+
+      // 6. 开始轮询消息
       developer.log('Starting message polling timer');
       _consumeTimer =
           Timer.periodic(const Duration(milliseconds: 300), (timer) {
@@ -281,6 +321,12 @@ class ConsumerProvider extends ChangeNotifier {
               'isJson': processedContent['isJson'],
               'formattedContent': processedContent['formattedContent']
             });
+
+            // 如果启用了自动保存，实时写入文件
+            if (_autoSaveEnabled && _fileSink != null) {
+              _writeMessageToFile(content);
+            }
+
             developer.log(
                 'Added message to list, current message count: ${_messages.length}');
             // 立即通知UI更新，不使用addPostFrameCallback以避免延迟
@@ -327,6 +373,9 @@ class ConsumerProvider extends ChangeNotifier {
       developer.log('Stopping message consumption');
       _consumeTimer?.cancel();
 
+      // 关闭自动保存文件
+      await _closeAutoSaveFile();
+
       if (_consumer != null) {
         KafkaFFI.closeClient(_consumer!);
         _consumer = null;
@@ -341,6 +390,7 @@ class ConsumerProvider extends ChangeNotifier {
       _consumeTimer?.cancel();
       _isConsuming = false;
       _consumer = null;
+      await _closeAutoSaveFile();
       notifyListeners();
       throw Exception('Failed to stop consuming: $e');
     }
@@ -385,6 +435,189 @@ class ConsumerProvider extends ChangeNotifier {
       _messages.clear();
       notifyListeners();
       throw Exception('Failed to disconnect consumer: $e');
+    }
+  }
+
+  /// 保存消息到文件
+  /// format: json, csv, txt
+  /// filePath: 文件保存路径
+  Future<void> saveMessagesToFile(String format, String filePath) async {
+    if (_messages.isEmpty) {
+      throw Exception('No messages to save');
+    }
+
+    final file = File(filePath);
+
+    try {
+      switch (format) {
+        case 'json':
+          await _saveAsJson(file);
+          break;
+        case 'csv':
+          await _saveAsCsv(file);
+          break;
+        case 'txt':
+          await _saveAsTxt(file);
+          break;
+        default:
+          throw Exception('Unsupported file format: $format');
+      }
+      developer
+          .log('Successfully saved ${_messages.length} messages to $filePath');
+    } catch (e, stackTrace) {
+      developer.log('Error saving messages to file: $e',
+          stackTrace: stackTrace);
+      throw Exception('Failed to save messages: $e');
+    }
+  }
+
+  /// 保存为JSON格式
+  Future<void> _saveAsJson(File file) async {
+    // 创建包含所有消息的JSON数组
+    final jsonArray = jsonEncode(_messages);
+    await file.writeAsString(jsonArray);
+  }
+
+  /// 保存为CSV格式
+  Future<void> _saveAsCsv(File file) async {
+    final sink = file.openWrite();
+
+    // 写入CSV头
+    sink.writeln('Topic,Partition,Offset,Key,Timestamp,Content');
+
+    // 写入每条消息
+    for (final message in _messages) {
+      final topic = _escapeCsvField(message['topic']?.toString() ?? 'unknown');
+      final partition = message['partition']?.toString() ?? '-1';
+      final offset = message['offset']?.toString() ?? '-1';
+      final key = _escapeCsvField(message['key']?.toString() ?? '');
+      final timestamp = message['timestamp']?.toString() ?? '0';
+      final content = _escapeCsvField(message['content']?.toString() ?? '');
+
+      sink.writeln('$topic,$partition,$offset,$key,$timestamp,$content');
+    }
+
+    await sink.flush();
+    await sink.close();
+  }
+
+  /// CSV字段转义：处理逗号、引号和换行符
+  String _escapeCsvField(String field) {
+    if (field.contains(',') || field.contains('"') || field.contains('\n') || field.contains('\r')) {
+      // 将双引号转义为两个双引号，并用双引号包围整个字段
+      return '"${field.replaceAll('"', '""')}"';
+    }
+    return field;
+  }
+
+  /// 保存为TXT格式
+  Future<void> _saveAsTxt(File file) async {
+    final sink = file.openWrite();
+
+    for (int i = 0; i < _messages.length; i++) {
+      final message = _messages[i];
+      sink.writeln('=== Message ${i + 1} ===');
+      sink.writeln('Topic: ${message['topic']}');
+      sink.writeln('Partition: ${message['partition']}');
+      sink.writeln('Offset: ${message['offset']}');
+      sink.writeln('Key: ${message['key']}');
+      sink.writeln('Timestamp: ${message['timestamp']}');
+      sink.writeln('Content:');
+      sink.writeln(message['content']);
+      sink.writeln();
+    }
+
+    await sink.flush();
+    await sink.close();
+  }
+
+  // ============ 自动保存相关方法 ============
+
+  /// 初始化自动保存文件
+  Future<void> _initAutoSaveFile() async {
+    if (_autoSaveFilePath == null) return;
+
+    try {
+      final file = File(_autoSaveFilePath!);
+      _fileSink = file.openWrite();
+      _isFirstMessage = true;
+
+      // 根据格式写入文件头
+      switch (_autoSaveFormat) {
+        case 'json':
+          _fileSink!.write('[');
+          break;
+        case 'csv':
+          _fileSink!.writeln('Message');
+          break;
+        case 'txt':
+          // TXT 不需要文件头
+          break;
+      }
+
+      developer.log('Initialized auto-save file: $_autoSaveFilePath, format: $_autoSaveFormat');
+    } catch (e, stackTrace) {
+      developer.log('Failed to initialize auto-save file: $e', stackTrace: stackTrace);
+      _fileSink = null;
+    }
+  }
+
+  /// 实时写入消息到文件（只保存消息内容）
+  void _writeMessageToFile(String content) {
+    if (_fileSink == null) return;
+
+    try {
+      switch (_autoSaveFormat) {
+        case 'json':
+          // JSON格式：每条消息作为数组元素
+          if (!_isFirstMessage) {
+            _fileSink!.write(',\n');
+          }
+          // 尝试解析并重新编码以确保格式正确
+          try {
+            final decoded = jsonDecode(content);
+            _fileSink!.write(jsonEncode(decoded));
+          } catch (_) {
+            // 如果不是有效JSON，作为字符串保存
+            _fileSink!.write(jsonEncode(content));
+          }
+          _isFirstMessage = false;
+          break;
+        case 'csv':
+          // CSV格式：每行一条消息，转义特殊字符
+          _fileSink!.writeln(_escapeCsvField(content));
+          break;
+        case 'txt':
+          // TXT格式：每行一条消息
+          _fileSink!.writeln(content);
+          break;
+        default:
+          _fileSink!.writeln(content);
+      }
+    } catch (e, stackTrace) {
+      developer.log('Failed to write message to file: $e', stackTrace: stackTrace);
+    }
+  }
+
+  /// 关闭自动保存文件
+  Future<void> _closeAutoSaveFile() async {
+    if (_fileSink == null) return;
+
+    try {
+      // 根据格式写入文件尾
+      if (_autoSaveFormat == 'json') {
+        _fileSink!.write('\n]');
+      }
+
+      await _fileSink!.flush();
+      await _fileSink!.close();
+      _fileSink = null;
+      _isFirstMessage = true;
+
+      developer.log('Closed auto-save file: $_autoSaveFilePath');
+    } catch (e, stackTrace) {
+      developer.log('Failed to close auto-save file: $e', stackTrace: stackTrace);
+      _fileSink = null;
     }
   }
 }
